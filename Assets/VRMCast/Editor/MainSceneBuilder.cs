@@ -47,6 +47,9 @@ namespace VRMCast.Editor
                 : EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             var app = FindOrCreate(scene, "App");
+            // A component whose script no longer resolves (for example a built-in fileID that changed between
+            // Unity versions) would otherwise linger as "referenced script (Unknown) is missing".
+            GameObjectUtility.RemoveMonoBehavioursWithMissingScript(app);
             var bootstrap = app.GetComponent<AppBootstrap>() ?? app.AddComponent<AppBootstrap>();
             var document = app.GetComponent<UIDocument>() ?? app.AddComponent<UIDocument>();
             document.panelSettings = panelSettings;
