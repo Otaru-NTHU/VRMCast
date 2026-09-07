@@ -26,6 +26,47 @@
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
+                    <ui:Label name="section-camera" text="" class="section-title" />
+                    <ui:VisualElement class="row">
+                        <ui:DropdownField name="camera-device" label="" class="grow" />
+                        <ui:Button name="camera-refresh" text="↻" class="icon-button" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="camera-preview-box" class="camera-preview-box">
+                        <ui:Image name="camera-preview" class="camera-preview" />
+                        <ui:Label name="camera-state" text="" class="camera-state" />
+                    </ui:VisualElement>
+                    <ui:Toggle name="camera-mirror" label="" value="true" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section">
+                    <ui:Label name="section-tracking" text="" class="section-title" />
+                    <ui:Label name="tracking-setup-hint" text="" class="hint warning-text" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="tracking-toggle" text="" class="primary grow" />
+                        <ui:Button name="calibrate" text="" class="grow" />
+                    </ui:VisualElement>
+                    <ui:Label name="tracking-status" text="" class="tracking-status" />
+                    <ui:DropdownField name="tracking-mode" label="" />
+                    <ui:Foldout name="tracking-advanced" text="" value="false" class="advanced-foldout">
+                        <ui:Toggle name="mirror-user" label="" value="true" />
+                        <ui:VisualElement class="row">
+                            <ui:Slider name="track-smoothing" label="" low-value="0" high-value="1" value="0.5" class="grow" />
+                            <ui:Label name="track-smoothing-value" text="" class="value-label" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="row">
+                            <ui:Slider name="track-gain" label="" low-value="0.2" high-value="2.5" value="1" class="grow" />
+                            <ui:Label name="track-gain-value" text="" class="value-label" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="row">
+                            <ui:Toggle name="invert-pitch" label="" />
+                            <ui:Toggle name="invert-yaw" label="" />
+                            <ui:Toggle name="invert-roll" label="" />
+                        </ui:VisualElement>
+                        <ui:Button name="clear-calibration" text="" />
+                    </ui:Foldout>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section">
                     <ui:Label name="section-framing" text="" class="section-title" />
                     <ui:DropdownField name="framing-preset" label="Preset" />
                     <ui:VisualElement class="row">
@@ -69,6 +110,7 @@
                     <ui:Label name="diag-fps" text="Render: – fps" class="diag" />
                     <ui:Label name="diag-output" text="Output: –" class="diag" />
                     <ui:Label name="diag-avatar" text="Avatar: (none)" class="diag" />
+                    <ui:Label name="diag-tracking" text="" class="diag" />
                     <ui:Button name="copy-diagnostics" text="Copy Diagnostics" />
                 </ui:VisualElement>
             </ui:ScrollView>

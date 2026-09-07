@@ -3,6 +3,7 @@ using UniGLTF;
 using UnityEngine;
 using VRM;
 using VRMCast.Core.Avatar;
+using VRMCast.Core.Tracking;
 using VRMCast.Core.Vrm;
 
 namespace VRMCast.Avatar
@@ -13,6 +14,8 @@ namespace VRMCast.Avatar
         private readonly RuntimeGltfInstance _instance;
         private readonly Animator _animator;
         private readonly VRMBlendShapeProxy _blendShapes;
+        private readonly VRMLookAtHead _lookAt;
+        private readonly Dictionary<string, BlendShapeKey> _canonicalKeys = new Dictionary<string, BlendShapeKey>();
         private readonly Dictionary<string, BlendShapeKey> _keysByName = new Dictionary<string, BlendShapeKey>();
         private readonly List<string> _expressionNames = new List<string>();
 
@@ -22,6 +25,8 @@ namespace VRMCast.Avatar
             _instance = instance;
             _animator = instance.GetComponent<Animator>();
             _blendShapes = instance.GetComponent<VRMBlendShapeProxy>();
+            _lookAt = instance.GetComponent<VRMLookAtHead>();
+            if (_lookAt != null) _lookAt.Target = null; // driven manually through RaiseYawPitchChanged
 
             if (_blendShapes != null && _blendShapes.BlendShapeAvatar != null)
             {
@@ -52,9 +57,27 @@ namespace VRMCast.Avatar
 
         public override bool SetExpressionWeight(string name, float weight)
         {
-            if (_blendShapes == null || !_keysByName.TryGetValue(name, out var key)) return false;
+            if (_blendShapes == null || !TryResolveKey(name, out var key)) return false;
             _blendShapes.ImmediatelySetValue(key, Mathf.Clamp01(weight));
             return true;
+        }
+
+        /// <summary>Accepts canonical names (happy, blinkLeft, aa …), 0.x preset names (Joy, Blink_L, A …) and custom clip names.</summary>
+        private bool TryResolveKey(string name, out BlendShapeKey key)
+        {
+            if (_canonicalKeys.TryGetValue(name, out key)) return true;
+            if (_keysByName.TryGetValue(name, out key)) { _canonicalKeys[name] = key; return true; }
+            var preset = VrmExpressions.ToVrm0Preset(name);
+            if (preset != null && _keysByName.TryGetValue(preset, out key)) { _canonicalKeys[name] = key; return true; }
+            return false;
+        }
+
+        public override bool TryGetPoseBone(HumanBodyBones bone, out Transform transform) => TryGetBone(bone, out transform);
+
+        public override void SetLookAt(float yawDeg, float pitchDeg)
+        {
+            if (_lookAt == null) return;
+            _lookAt.RaiseYawPitchChanged(yawDeg, pitchDeg);
         }
 
         public override bool TryGetBone(HumanBodyBones bone, out Transform transform)

@@ -104,3 +104,6 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# MediaPipeUnityPlugin tarball is downloaded by Scripts/setup-mediapipe.sh (290 MB, not committed)
+/Packages/com.github.homuler.mediapipe-*.tgz

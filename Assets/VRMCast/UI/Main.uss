@@ -350,3 +350,120 @@ DropdownField > Label, TextField > Label, Slider > Label {
 #file-picker-error {
     min-height: 16px;
 }
+
+/* Camera & tracking */
+
+.camera-preview-box {
+    height: 150px;
+    margin: 4px 2px;
+    background-color: rgb(16, 16, 18);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: var(--border);
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.camera-preview {
+    width: 100%;
+    height: 100%;
+}
+
+.camera-preview.mirrored {
+    scale: -1 1;
+}
+
+.camera-state {
+    position: absolute;
+    bottom: 4px;
+    left: 6px;
+    color: var(--text-dim);
+    font-size: 10px;
+}
+
+.tracking-status {
+    margin: 4px 2px;
+    color: var(--text-dim);
+}
+
+.tracking-status.tracking {
+    color: var(--ok);
+}
+
+.tracking-status.problem {
+    color: var(--danger);
+}
+
+.warning-text {
+    color: rgb(240, 190, 90);
+}
+
+.icon-button {
+    width: 30px;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.advanced-foldout > .unity-foldout__toggle {
+    margin-left: 0;
+}
+
+.advanced-foldout > .unity-foldout__toggle .unity-toggle__text {
+    color: var(--text-dim);
+}
+
+.advanced-foldout > .unity-foldout__content {
+    margin-left: 4px;
+}
+
+Toggle {
+    margin: 2px;
+}
+
+Toggle > Label {
+    min-width: 0;
+    margin-right: 6px;
+    color: var(--text);
+}
+
+Toggle .unity-toggle__checkmark {
+    background-color: var(--bg-field);
+    border-color: var(--border);
+}
+
+/* Slim scrollbar for the sidebar */
+
+.sidebar .unity-scroller--vertical {
+    width: 8px;
+    margin: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.sidebar .unity-scroller--vertical .unity-scroller__low-button,
+.sidebar .unity-scroller--vertical .unity-scroller__high-button {
+    display: none;
+}
+
+.sidebar .unity-scroller--vertical .unity-base-slider__tracker {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+}
+
+.sidebar .unity-scroller--vertical .unity-base-slider__dragger {
+    width: 6px;
+    left: 1px;
+    border-radius: 3px;
+    border-width: 0;
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.sidebar .unity-scroller--vertical .unity-base-slider__dragger:hover {
+    background-color: rgba(255, 255, 255, 0.32);
+}
+
+.sidebar .unity-scroller--vertical .unity-base-slider {
+    margin: 0;
+    padding: 0;
+}

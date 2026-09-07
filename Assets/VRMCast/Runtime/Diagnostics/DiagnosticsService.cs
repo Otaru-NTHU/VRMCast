@@ -5,6 +5,7 @@ using VRMCast.CameraControl;
 using VRMCast.Core.Diagnostics;
 using VRMCast.Output;
 using VRMCast.Rendering;
+using VRMCast.Tracking;
 
 namespace VRMCast.Diagnostics
 {
@@ -17,6 +18,7 @@ namespace VRMCast.Diagnostics
         private readonly BackgroundService _background;
         private readonly AvatarCameraController _camera;
         private readonly OutputService _outputs;
+        private TrackingCoordinator _tracking;
 
         public DiagnosticsService(IRenderService render, IAvatarService avatars, BackgroundService background, AvatarCameraController camera, OutputService outputs)
         {
@@ -26,6 +28,9 @@ namespace VRMCast.Diagnostics
             _camera = camera;
             _outputs = outputs;
         }
+
+        /// <summary>Tracking is constructed after diagnostics; attach it once it exists.</summary>
+        public void AttachTracking(TrackingCoordinator tracking) => _tracking = tracking;
 
         public double RenderFps => _fps.Fps;
 
@@ -50,6 +55,14 @@ namespace VRMCast.Diagnostics
                 OutputStatus = OutputStatusLabel(),
                 AppVersion = Application.version,
                 Platform = $"{Application.platform} / {SystemInfo.graphicsDeviceType} / {SystemInfo.processorType}",
+                TrackingStatus = _tracking != null ? _tracking.CurrentStatus.ToString() : "off",
+                TrackingEngine = FaceTrackingProviderRegistry.HasProviders ? FaceTrackingProviderRegistry.Names[0] : "(none)",
+                TrackingFps = _tracking != null ? _tracking.Stats.ResultFps : 0,
+                InferenceMs = _tracking != null ? _tracking.Stats.InferenceMs : 0,
+                TrackingDropped = _tracking != null ? _tracking.Stats.Dropped : 0,
+                FaceConfidence = _tracking != null ? _tracking.Solver.Pose.Confidence : 0f,
+                CameraDevice = _tracking != null && !string.IsNullOrEmpty(_tracking.Camera.SelectedDevice) ? _tracking.Camera.SelectedDevice : "(none)",
+                CameraResolution = _tracking != null && _tracking.Camera.Texture != null ? $"{_tracking.Camera.Texture.width}x{_tracking.Camera.Texture.height}" : "-",
             };
         }
 

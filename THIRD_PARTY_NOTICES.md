@@ -30,11 +30,21 @@ UniVRM bundles MToon (MIT, Santarh / VRM Consortium) and UniHumanoid (MIT).
 | .NET SDK | 8.0 | MIT | `Scripts/run-core-tests.sh` only |
 | JetBrains Rider / Visual Studio editor packages | 3.0.36 / 2.0.23 | Unity Companion License | IDE integration |
 
+## Tracking dependencies (downloaded by `Scripts/setup-mediapipe.sh`, not committed)
+
+| Component | Version | License | Source |
+| --- | --- | --- | --- |
+| MediaPipeUnityPlugin (`com.github.homuler.mediapipe`) | 0.16.3 (tarball, SHA-256 `cc3e77a2…cf2e79`) | MIT | https://github.com/homuler/MediaPipeUnityPlugin |
+| Google MediaPipe (native library bundled in the plugin) | as bundled in 0.16.3 | Apache-2.0 | https://github.com/google-ai-edge/mediapipe |
+| Face Landmarker model `face_landmarker_v2_with_blendshapes` (bundled in the plugin) | v2 | Apache-2.0 (Google) | https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker |
+
+The plugin's own `Third Party Notices.md` (Abseil, OpenCV, protobuf, TensorFlow Lite and others) applies to the
+native library and is included in the package.
+
 ## Planned (not yet in the project)
 
 | Component | License | Milestone |
 | --- | --- | --- |
-| MediaPipeUnityPlugin (homuler) | MIT; bundles Google MediaPipe (Apache-2.0) and its models | MVP-B |
 | Apple Core Media I/O Camera Extension APIs | Apple SDK license | MVP-E |
 
 No paid assets, no cloud inference, no network dependency for runtime tracking (PRD 40, 41).

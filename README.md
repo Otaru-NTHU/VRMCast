@@ -5,29 +5,32 @@ Open-source real-time VRM avatar tracking, motion capture, and virtual camera fo
 VRMCast loads VRM 0.x and VRM 1.0 avatars, will drive them from a webcam / iPhone / microphone, and
 composites the result for OBS at 1920×1080 / 30 fps. Apple Silicon only.
 
-**Current milestone: MVP-A, render foundation.** The app loads avatars at runtime, frames them with
-camera presets, composites solid / image / chroma / transparent backgrounds into a dedicated
-1920×1080 render texture, and exposes that texture to output consumers. Tracking (MVP-B), lip sync and
-upper body (MVP-C), profiles (MVP-D) and the macOS virtual camera (MVP-E) follow the sequence in
-[Docs/PRD.md](Docs/PRD.md).
+**Current milestone: MVP-B, face tracking.** The app loads avatars at runtime, frames them with camera
+presets, composites solid / image / chroma / transparent backgrounds into a dedicated 1920×1080 render
+texture, and drives head, eyes, blinks and mouth from a webcam through MediaPipe Face Landmarker with
+calibration and smoothing. Lip sync and upper body (MVP-C), profiles (MVP-D) and the macOS virtual camera
+(MVP-E) follow the sequence in [Docs/PRD.md](Docs/PRD.md).
 
 ## Stack
 
 - Unity 6.3 LTS (`6000.3.20f1`), Built-in Render Pipeline, C#
 - [UniVRM](https://github.com/vrm-c/UniVRM) v0.131.2 for VRM 0.x and 1.0 runtime loading
 - Unity UI Toolkit for the desktop UI, in 繁體中文 (default) and English
-- Later: MediaPipeUnityPlugin (tracking), Core Media I/O Camera Extension (virtual camera)
+- [MediaPipeUnityPlugin](https://github.com/homuler/MediaPipeUnityPlugin) v0.16.3 for face tracking (CPU)
+- Later: Core Media I/O Camera Extension (virtual camera)
 
 See [Docs/Architecture.md](Docs/Architecture.md) for the service layout and decisions.
 
 ## Getting started
 
 1. Install Unity `6000.3.20f1` with the **Mac Build Support** module through Unity Hub.
-2. Open this folder as a project. Unity Package Manager fetches UniVRM from GitHub on first open
+2. Run `Scripts/setup-mediapipe.sh` once; it downloads the 290 MB MediaPipe plugin tarball into `Packages/`.
+3. Open this folder as a project. Unity Package Manager fetches UniVRM from GitHub on first open
    (`Packages/manifest.json`).
-3. Open `Assets/VRMCast/Scenes/Main.unity` and press Play, or build with
+4. Open `Assets/VRMCast/Scenes/Main.unity` and press Play, or build with
    `Scripts/build-macos.sh` (produces `Builds/macOS/VRMCast.app`).
-4. Load VRM → pick a `.vrm` file. You can also pass a path: `open -a VRMCast.app --args /path/model.vrm`.
+5. Load VRM → pick a `.vrm` file. You can also pass a path: `open -a VRMCast.app --args /path/model.vrm`.
+6. Start Tracking, allow camera access, then Calibrate while facing the camera.
 
 If the scene opens with missing references (for example after a Unity upgrade), run
 **VRMCast > Setup > Rebuild Main Scene**; it regenerates the scene and UI assets.
@@ -47,7 +50,8 @@ Manual QA steps for each milestone are in [Docs/QA.md](Docs/QA.md).
 ```
 Assets/VRMCast/
   Core/       pure C# (VRM inspection, framing math, backgrounds, diagnostics, tracking contracts)
-  Runtime/    Unity services, UI Toolkit controller, bootstrap
+  Runtime/    Unity services, tracking pipeline, UI Toolkit controller, bootstrap
+  Tracking.MediaPipe/ MediaPipe face provider (optional assembly)
   Editor/     scene builder, build script
   Tests/      NUnit EditMode tests
   UI/         Main.uxml, Main.uss, PanelSettings, theme, background material

@@ -9,7 +9,9 @@ using VRMCast.Core.Backgrounds;
 using VRMCast.Core.Camera;
 using VRMCast.Core.Localization;
 using VRMCast.Core.Rendering;
+using VRMCast.Core.Tracking;
 using VRMCast.Core.Vrm;
+using VRMCast.Tracking;
 
 namespace VRMCast.UI
 {
@@ -51,6 +53,31 @@ namespace VRMCast.UI
         private readonly VisualElement _importAdvanced;
         private readonly DropdownField _importVersion;
         private readonly Button _retryLoad;
+
+        // Camera & tracking
+        private readonly DropdownField _cameraDevice;
+        private readonly Image _cameraPreview;
+        private readonly Label _cameraState;
+        private readonly Toggle _cameraMirror;
+        private readonly Label _trackingSetupHint;
+        private readonly Button _trackingToggle;
+        private readonly Button _calibrate;
+        private readonly Label _trackingStatus;
+        private readonly DropdownField _trackingMode;
+        private readonly Foldout _trackingAdvanced;
+        private readonly Toggle _mirrorUser;
+        private readonly Slider _trackSmoothing;
+        private readonly Label _trackSmoothingValue;
+        private readonly Slider _trackGain;
+        private readonly Label _trackGainValue;
+        private readonly Toggle _invertPitch;
+        private readonly Toggle _invertYaw;
+        private readonly Toggle _invertRoll;
+        private readonly Label _diagTracking;
+        private readonly Label _statusFace;
+        private static readonly FaceTrackingMode[] TrackingModeOrder = { FaceTrackingMode.Basic, FaceTrackingMode.Advanced };
+        private static readonly string[] TrackingModeKeys = { "tracking.basic", "tracking.advanced" };
+        private List<string> _cameraNames = new List<string>();
 
         // Framing
         private readonly DropdownField _framingPreset;
@@ -106,6 +133,27 @@ namespace VRMCast.UI
             _importVersion = Q<DropdownField>("import-version");
             _retryLoad = Q<Button>("retry-load");
 
+            _cameraDevice = Q<DropdownField>("camera-device");
+            _cameraPreview = Q<Image>("camera-preview");
+            _cameraState = Q<Label>("camera-state");
+            _cameraMirror = Q<Toggle>("camera-mirror");
+            _trackingSetupHint = Q<Label>("tracking-setup-hint");
+            _trackingToggle = Q<Button>("tracking-toggle");
+            _calibrate = Q<Button>("calibrate");
+            _trackingStatus = Q<Label>("tracking-status");
+            _trackingMode = Q<DropdownField>("tracking-mode");
+            _trackingAdvanced = Q<Foldout>("tracking-advanced");
+            _mirrorUser = Q<Toggle>("mirror-user");
+            _trackSmoothing = Q<Slider>("track-smoothing");
+            _trackSmoothingValue = Q<Label>("track-smoothing-value");
+            _trackGain = Q<Slider>("track-gain");
+            _trackGainValue = Q<Label>("track-gain-value");
+            _invertPitch = Q<Toggle>("invert-pitch");
+            _invertYaw = Q<Toggle>("invert-yaw");
+            _invertRoll = Q<Toggle>("invert-roll");
+            _diagTracking = Q<Label>("diag-tracking");
+            _statusFace = Q<Label>("status-face");
+
             _framingPreset = Q<DropdownField>("framing-preset");
             _fov = Q<Slider>("fov");
             _fovValue = Q<Label>("fov-value");
@@ -136,6 +184,8 @@ namespace VRMCast.UI
 
             BindHeader();
             BindModel();
+            BindCamera();
+            BindTracking();
             BindFraming();
             BindBackground();
             BindOutput();
@@ -150,6 +200,12 @@ namespace VRMCast.UI
             _services.Outputs.OutputsChanged += RefreshOutputStatus;
             _services.Camera.StateChanged += RefreshCameraControls;
             _services.Background.SettingsChanged += RefreshBackgroundControls;
+            _services.Camera2D.StateChanged += OnCameraStateChanged;
+            _services.Camera2D.DevicesChanged += RefreshWebcamControls;
+            _services.Tracking.StatusChanged += OnTrackingStatusChanged;
+            _services.Tracking.SettingsChanged += RefreshTrackingControls;
+            _services.Tracking.EnabledChanged += _ => RefreshTrackingControls();
+            _services.Tracking.CalibrationFinished += OnCalibrationFinished;
             _loc.LanguageChanged += OnLanguageChanged;
 
             ApplyLanguage();
@@ -238,6 +294,23 @@ namespace VRMCast.UI
             RebuildChoices(_importVersion, Localized(ImportVersionKeys));
             _retryLoad.text = _loc["import.retry"];
 
+            Q<Label>("section-camera").text = _loc["section.camera"];
+            _cameraDevice.label = _loc["camera.device"];
+            _cameraMirror.label = _loc["camera.mirror"];
+
+            Q<Label>("section-tracking").text = _loc["section.tracking"];
+            _calibrate.text = _loc["tracking.calibrate"];
+            _trackingMode.label = _loc["tracking.mode"];
+            RebuildChoices(_trackingMode, Localized(TrackingModeKeys));
+            _trackingAdvanced.text = _loc["tracking.advancedSettings"];
+            _mirrorUser.label = _loc["tracking.mirrorUser"];
+            _trackSmoothing.label = _loc["tracking.smoothing"];
+            _trackGain.label = _loc["tracking.headGain"];
+            _invertPitch.label = _loc["tracking.invertPitch"];
+            _invertYaw.label = _loc["tracking.invertYaw"];
+            _invertRoll.label = _loc["tracking.invertRoll"];
+            Q<Button>("clear-calibration").text = _loc["tracking.clearCalibration"];
+
             Q<Label>("section-framing").text = _loc["section.framing"];
             _framingPreset.label = _loc["framing.preset"];
             RebuildChoices(_framingPreset, Localized(FramingKeys));
@@ -263,7 +336,6 @@ namespace VRMCast.UI
             Q<Label>("section-diagnostics").text = _loc["section.diagnostics"];
             Q<Button>("copy-diagnostics").text = _loc["diag.copy"];
 
-            Q<Label>("status-face").text = _loc["status.face"];
             Q<Label>("status-audio").text = _loc["status.audio"];
         }
 
@@ -372,6 +444,170 @@ namespace VRMCast.UI
             {
                 _modelStatus.text = _loc["model.hint"];
                 _modelStatus.RemoveFromClassList("error-text");
+            }
+        }
+
+        // --------------------------------------------------------------- Camera
+
+        private void BindCamera()
+        {
+            _cameraDevice.RegisterValueChangedCallback(evt =>
+            {
+                if (_rebuildingChoices) return;
+                var index = ChoiceIndex(_cameraDevice, evt.newValue);
+                if (index >= 0 && index < _cameraNames.Count) _services.Camera2D.Select(_cameraNames[index]);
+            });
+            Q<Button>("camera-refresh").clicked += () => _services.Camera2D.RefreshDevices();
+            _cameraMirror.RegisterValueChangedCallback(evt =>
+            {
+                _services.Camera2D.MirrorPreview = evt.newValue;
+                _cameraPreview.EnableInClassList("mirrored", evt.newValue);
+            });
+            _cameraPreview.scaleMode = ScaleMode.ScaleToFit;
+            _cameraPreview.EnableInClassList("mirrored", _services.Camera2D.MirrorPreview);
+            _cameraMirror.SetValueWithoutNotify(_services.Camera2D.MirrorPreview);
+        }
+
+        private void OnCameraStateChanged(CameraCaptureService.State state)
+        {
+            RefreshWebcamControls();
+            RefreshTrackingControls();
+        }
+
+        private void RefreshWebcamControls()
+        {
+            var camera = _services.Camera2D;
+            _cameraNames = new List<string>(camera.Devices);
+            var choices = new List<string>(_cameraNames);
+            if (choices.Count == 0) choices.Add(_loc["camera.none"]);
+
+            _rebuildingChoices = true;
+            try
+            {
+                _cameraDevice.choices = choices;
+                var selected = _cameraNames.IndexOf(camera.SelectedDevice ?? string.Empty);
+                _cameraDevice.SetValueWithoutNotify(choices[selected >= 0 ? selected : 0]);
+            }
+            finally
+            {
+                _rebuildingChoices = false;
+            }
+            _cameraDevice.SetEnabled(_cameraNames.Count > 0);
+
+            _cameraPreview.image = camera.Texture;
+            _cameraState.text = _loc[CameraStateKey(camera.CurrentState)];
+        }
+
+        private static string CameraStateKey(CameraCaptureService.State state)
+        {
+            switch (state)
+            {
+                case CameraCaptureService.State.Stopped: return "camera.state.stopped";
+                case CameraCaptureService.State.RequestingPermission: return "camera.state.permission";
+                case CameraCaptureService.State.PermissionDenied: return "camera.state.denied";
+                case CameraCaptureService.State.Starting: return "camera.state.starting";
+                case CameraCaptureService.State.Running: return "camera.state.running";
+                case CameraCaptureService.State.Stalled: return "camera.state.stalled";
+                case CameraCaptureService.State.NoDevice: return "camera.state.noDevice";
+                default: return "camera.state.failed";
+            }
+        }
+
+        // ------------------------------------------------------------- Tracking
+
+        private void BindTracking()
+        {
+            var tracking = _services.Tracking;
+            _trackingToggle.clicked += () => tracking.SetEnabled(!tracking.Enabled);
+            _calibrate.clicked += () =>
+            {
+                if (tracking.StartCalibration()) ShowMessage(_loc["tracking.calibrateHint"], isError: false);
+            };
+            _trackingMode.RegisterValueChangedCallback(evt =>
+            {
+                if (_rebuildingChoices) return;
+                tracking.SetMode(TrackingModeOrder[ChoiceIndex(_trackingMode, evt.newValue)]);
+            });
+            _mirrorUser.RegisterValueChangedCallback(evt => { tracking.Settings.MirrorUser = evt.newValue; tracking.NotifySettingsChanged(); });
+            _trackSmoothing.RegisterValueChangedCallback(evt =>
+            {
+                tracking.Settings.HeadSmoothing = evt.newValue;
+                tracking.Settings.ExpressionSmoothing = evt.newValue * 0.8f;
+                tracking.Settings.LookSmoothing = evt.newValue;
+                _trackSmoothingValue.text = $"{evt.newValue:0.00}";
+            });
+            _trackGain.RegisterValueChangedCallback(evt =>
+            {
+                tracking.Settings.HeadGain = evt.newValue;
+                _trackGainValue.text = $"{evt.newValue:0.0}×";
+            });
+            _invertPitch.RegisterValueChangedCallback(evt => tracking.Settings.InvertPitch = evt.newValue);
+            _invertYaw.RegisterValueChangedCallback(evt => tracking.Settings.InvertYaw = evt.newValue);
+            _invertRoll.RegisterValueChangedCallback(evt => tracking.Settings.InvertRoll = evt.newValue);
+            Q<Button>("clear-calibration").clicked += () =>
+            {
+                tracking.ClearCalibration();
+                ShowMessage(_loc["tracking.calibrationCleared"], isError: false);
+            };
+        }
+
+        private void OnTrackingStatusChanged(TrackingCoordinator.Status status) => RefreshTrackingControls();
+
+        private void OnCalibrationFinished(bool ok)
+        {
+            ShowMessage(_loc[ok ? "tracking.calibrated" : "tracking.calibrationFailed"], isError: !ok);
+            RefreshTrackingControls();
+        }
+
+        private void RefreshTrackingControls()
+        {
+            var tracking = _services.Tracking;
+            var settings = tracking.Settings;
+            var engine = tracking.EngineAvailable && tracking.ModelAvailable;
+
+            _trackingSetupHint.style.display = engine ? DisplayStyle.None : DisplayStyle.Flex;
+            _trackingSetupHint.text = _loc[tracking.EngineAvailable ? "tracking.noModel" : "tracking.noEngine"];
+            _trackingToggle.SetEnabled(engine);
+            _trackingToggle.text = _loc[tracking.Enabled ? "tracking.stop" : "tracking.start"];
+            _trackingToggle.EnableInClassList("running", tracking.Enabled);
+            _calibrate.SetEnabled(tracking.Enabled && (tracking.CurrentStatus == TrackingCoordinator.Status.Tracking || tracking.CurrentStatus == TrackingCoordinator.Status.Searching));
+
+            var statusKey = TrackingStatusKey(tracking.CurrentStatus);
+            var statusText = _loc[statusKey];
+            if (tracking.CurrentStatus == TrackingCoordinator.Status.Calibrating) statusText += $" {tracking.CalibrationProgress * 100f:0}%";
+            if (settings.Calibration != null && settings.Calibration.IsCalibrated) statusText += " · " + _loc["tracking.calibratedTag"];
+            _trackingStatus.text = statusText;
+            _trackingStatus.EnableInClassList("tracking", tracking.CurrentStatus == TrackingCoordinator.Status.Tracking);
+            _trackingStatus.EnableInClassList("problem", tracking.CurrentStatus == TrackingCoordinator.Status.CameraError || tracking.CurrentStatus == TrackingCoordinator.Status.NoEngine || tracking.CurrentStatus == TrackingCoordinator.Status.NoModel);
+
+            SetChoice(_trackingMode, IndexOf(TrackingModeOrder, settings.Mode));
+            _mirrorUser.SetValueWithoutNotify(settings.MirrorUser);
+            _trackSmoothing.SetValueWithoutNotify(settings.HeadSmoothing);
+            _trackSmoothingValue.text = $"{settings.HeadSmoothing:0.00}";
+            _trackGain.SetValueWithoutNotify(settings.HeadGain);
+            _trackGainValue.text = $"{settings.HeadGain:0.0}×";
+            _invertPitch.SetValueWithoutNotify(settings.InvertPitch);
+            _invertYaw.SetValueWithoutNotify(settings.InvertYaw);
+            _invertRoll.SetValueWithoutNotify(settings.InvertRoll);
+
+            _statusFace.text = _loc[tracking.CurrentStatus == TrackingCoordinator.Status.Tracking ? "status.faceOn"
+                : tracking.Enabled ? "status.faceSearching" : "status.faceOff"];
+            _statusFace.EnableInClassList("status-dim", tracking.CurrentStatus != TrackingCoordinator.Status.Tracking);
+        }
+
+        private static string TrackingStatusKey(TrackingCoordinator.Status status)
+        {
+            switch (status)
+            {
+                case TrackingCoordinator.Status.Off: return "tracking.status.off";
+                case TrackingCoordinator.Status.NoEngine: return "tracking.status.noEngine";
+                case TrackingCoordinator.Status.NoModel: return "tracking.status.noModel";
+                case TrackingCoordinator.Status.Starting: return "tracking.status.starting";
+                case TrackingCoordinator.Status.Searching: return "tracking.status.searching";
+                case TrackingCoordinator.Status.Tracking: return "tracking.status.tracking";
+                case TrackingCoordinator.Status.CameraError: return "tracking.status.cameraError";
+                case TrackingCoordinator.Status.Calibrating: return "tracking.status.calibrating";
+                default: return "tracking.status.off";
             }
         }
 
@@ -531,6 +767,8 @@ namespace VRMCast.UI
             _diagOutput.text = _loc.Format("diag.output", snap.Output.Width, snap.Output.Height, snap.Output.Fps, snap.TargetFrameRate);
             _diagAvatar.text = _loc.Format("diag.avatar", snap.AvatarName, avatarVersion);
             _statusRenderFps.text = _loc.Format("status.render", snap.RenderFps.ToString("0.0"));
+            _diagTracking.text = _loc.Format("diag.tracking", snap.TrackingFps.ToString("0.0"), snap.InferenceMs.ToString("0"), snap.TrackingDropped);
+            if (_services.Tracking.CurrentStatus == TrackingCoordinator.Status.Calibrating) RefreshTrackingControls();
         }
 
         // -------------------------------------------------------------- Preview
@@ -572,6 +810,11 @@ namespace VRMCast.UI
             _services.Outputs.OutputsChanged -= RefreshOutputStatus;
             _services.Camera.StateChanged -= RefreshCameraControls;
             _services.Background.SettingsChanged -= RefreshBackgroundControls;
+            _services.Camera2D.StateChanged -= OnCameraStateChanged;
+            _services.Camera2D.DevicesChanged -= RefreshWebcamControls;
+            _services.Tracking.StatusChanged -= OnTrackingStatusChanged;
+            _services.Tracking.SettingsChanged -= RefreshTrackingControls;
+            _services.Tracking.CalibrationFinished -= OnCalibrationFinished;
             _loc.LanguageChanged -= OnLanguageChanged;
             _filePicker.Dispose();
             _previewInput.Dispose();

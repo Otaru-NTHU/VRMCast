@@ -6,6 +6,7 @@ using VRMCast.Core.Localization;
 using VRMCast.Diagnostics;
 using VRMCast.Output;
 using VRMCast.Rendering;
+using VRMCast.Tracking;
 
 namespace VRMCast.App
 {
@@ -24,11 +25,15 @@ namespace VRMCast.App
         public PreviewOutput Preview { get; }
         public NullOutput DebugOutput { get; }
         public DiagnosticsService Diagnostics { get; }
+        public CameraCaptureService Camera2D { get; }
+        public TrackingCoordinator Tracking { get; }
 
         public AppServices(Localizer localizer, IRenderService render, IAvatarService avatars, BackgroundService background,
             AvatarCameraController camera, OutputService outputs, PreviewOutput preview, NullOutput debugOutput,
-            DiagnosticsService diagnostics)
+            DiagnosticsService diagnostics, CameraCaptureService camera2D, TrackingCoordinator tracking)
         {
+            Camera2D = camera2D;
+            Tracking = tracking;
             Localizer = localizer;
             Render = render;
             Avatars = avatars;
@@ -43,6 +48,8 @@ namespace VRMCast.App
         public void Dispose()
         {
             // Reverse construction order.
+            Tracking.Dispose();
+            Camera2D.Dispose();
             Outputs.Dispose();
             Camera.Dispose();
             Background.Dispose();

@@ -14,11 +14,17 @@ and can carry whichever name is chosen then.
 | Render pipeline | Built-in Render Pipeline | see D-014 below |
 | VRM runtime | UniVRM (`com.vrmc.gltf`, `com.vrmc.univrm`, `com.vrmc.vrm`) | `v0.131.2` via git URL in `Packages/manifest.json` |
 | UI | Unity UI Toolkit (runtime) | built-in module |
-| Tracking | MediaPipeUnityPlugin | not added yet (MVP-B) |
+| Tracking | MediaPipeUnityPlugin (Face Landmarker, CPU) | v0.16.3 tarball via `Scripts/setup-mediapipe.sh` |
 | Virtual camera | Core Media I/O Camera Extension | not added yet (MVP-E) |
 
 The Unity project lives at the repository root (`Assets/`, `Packages/`, `ProjectSettings/`) so the
 standard Unity `.gitignore` applies. Application code lives under `Assets/VRMCast/`.
+
+### D-015 MediaPipe as an optional assembly, tarball pinned outside git
+
+The 290 MB plugin tarball is downloaded by `Scripts/setup-mediapipe.sh` (SHA-256 verified) rather than committed.
+`Packages/manifest.json` pins it by file name; the provider assembly compiles only when the package resolves,
+and the UI tells the user what to run otherwise.
 
 ### D-014 Built-in Render Pipeline for MVP-A
 
@@ -30,10 +36,11 @@ material-generator change, not an architecture change; `RenderService` does not 
 ## Assemblies
 
 ```
-VRMCast.Core        (Assets/VRMCast/Core)     pure C#, noEngineReferences = true
-VRMCast.Runtime     (Assets/VRMCast/Runtime)  Unity + UniVRM; services, UI controller, bootstrap
-VRMCast.Editor      (Assets/VRMCast/Editor)   scene builder, build script, setup self-check
-VRMCast.Core.Tests  (Assets/VRMCast/Tests)    NUnit EditMode tests for VRMCast.Core
+VRMCast.Core               (Assets/VRMCast/Core)              pure C#, noEngineReferences = true
+VRMCast.Runtime            (Assets/VRMCast/Runtime)           Unity + UniVRM; services, tracking pipeline, UI, bootstrap
+VRMCast.Tracking.MediaPipe (Assets/VRMCast/Tracking.MediaPipe) MediaPipe provider; compiled only when the package exists
+VRMCast.Editor             (Assets/VRMCast/Editor)            scene builder, build script, setup self-check
+VRMCast.Core.Tests         (Assets/VRMCast/Tests)             NUnit EditMode tests for VRMCast.Core
 ```
 
 `VRMCast.Core` has no `UnityEngine` reference on purpose. Everything that can be expressed as plain
@@ -52,6 +59,8 @@ AppBootstrap (MonoBehaviour, composition root, scene-serialized references)
  │    ├── PreviewOutput     the in-app preview (UI binds the texture directly)
  │    └── NullOutput        debug consumer; validates frame size (virtual camera comes in MVP-E)
  ├── DiagnosticsService     render FPS window + snapshot/report
+ ├── CameraCaptureService   WebCamTexture device selection, permission, stall recovery
+ ├── TrackingCoordinator    provider (from FaceTrackingProviderRegistry) → MotionSolver → AvatarDriver
  └── MainView (UI Toolkit)  binds Main.uxml to the services above; never touches UniVRM
 ```
 
@@ -136,10 +145,19 @@ app therefore ships an in-app file browser (`FilePickerView`) and also accepts a
 command line (`open -a VRMCast.app --args /path/to/avatar.vrm`). A small NSOpenPanel bridge under
 `Native/macOS` is the intended replacement once native code enters the project in MVP-E.
 
-## Reserved interfaces (PRD 8, 15, 19)
+## Tracking (PRD 7–12)
 
-- `VRMCast.Core.Tracking`: `TrackingFrame` contract, `ITrackingProvider` and its face/pose/hand/external
-  sub-interfaces, and `LatestFrameBuffer<T>` (single-slot, thread-safe mailbox). No provider exists yet.
+See Docs/Tracking.md for the pipeline. Architecturally: `VRMCast.Core.Tracking` holds the contract
+(`TrackingFrame`, `ITrackingProvider` family, `LatestFrameBuffer<T>`) and all pure logic (`FaceFrameBuilder`,
+`CalibrationSampler`, `ExpressionMapper`, `MotionSolver`, `TrackingStats`). The runtime adds
+`CameraCaptureService`, `TrackingCoordinator` and `AvatarDriver`. Tracking engines are optional assemblies that
+register a factory in `FaceTrackingProviderRegistry` at load time; the app never references MediaPipe types,
+so the project builds with or without the package. `LoadedAvatar` gained `TryGetPoseBone` (normalized bones,
+VRM 1.0 control rig), `SetLookAt` and canonical expression names so the driver is version-neutral.
+
+## Reserved interfaces (PRD 15, 19)
+
+- `IPoseTrackingProvider`, `IHandTrackingProvider`, `IExternalTrackingProvider` exist without implementations.
 - `VRMCast.Output.IFrameOutput` with `PreviewOutput` and `NullOutput`. `MacVirtualCameraOutput` arrives
   after the Camera Extension spike (Docs/VirtualCamera.md).
 

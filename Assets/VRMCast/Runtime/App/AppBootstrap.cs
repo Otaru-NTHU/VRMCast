@@ -10,7 +10,9 @@ using VRMCast.Core.Localization;
 using VRMCast.Core.Rendering;
 using VRMCast.Diagnostics;
 using VRMCast.Output;
+using VRMCast.Core.Tracking;
 using VRMCast.Rendering;
+using VRMCast.Tracking;
 using VRMCast.UI;
 
 namespace VRMCast.App
@@ -26,6 +28,8 @@ namespace VRMCast.App
         [Header("Serialized references")]
         [SerializeField] private UIDocument _uiDocument;
         [SerializeField] private Material _backgroundImageMaterial;
+        [Tooltip("MediaPipe face_landmarker_v2_with_blendshapes.bytes from the com.github.homuler.mediapipe package.")]
+        [SerializeField] private TextAsset _faceLandmarkerModel;
 
         [Header("Defaults (PRD 34)")]
         [SerializeField] private int _outputWidth = OutputSettings.DefaultWidth;
@@ -40,6 +44,10 @@ namespace VRMCast.App
         [SerializeField] private string _startupVrmPath;
 
         public const string LanguagePrefKey = "vrmcast.language";
+        public const string CameraPrefKey = "vrmcast.camera.device";
+        public const string MirrorPrefKey = "vrmcast.tracking.mirror";
+        public const string TrackingModePrefKey = "vrmcast.tracking.mode";
+        public const string TrackingEnabledPrefKey = "vrmcast.tracking.enabled";
 
         private AppServices _services;
         private MainView _view;
@@ -84,7 +92,34 @@ namespace VRMCast.App
 
             var diagnostics = new DiagnosticsService(render, avatars, background, camera, outputs);
 
-            _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics);
+            var capture = new CameraCaptureService(this);
+            var savedCamera = PlayerPrefs.GetString(CameraPrefKey, string.Empty);
+            if (!string.IsNullOrEmpty(savedCamera)) capture.Select(savedCamera);
+
+            var trackingSettings = new FaceTrackingSettings
+            {
+                MirrorUser = PlayerPrefs.GetInt(MirrorPrefKey, 1) != 0,
+                Mode = PlayerPrefs.GetInt(TrackingModePrefKey, 0) == 1 ? FaceTrackingMode.Advanced : FaceTrackingMode.Basic,
+            };
+            var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings);
+            tracking.SettingsChanged += () =>
+            {
+                PlayerPrefs.SetInt(MirrorPrefKey, tracking.Settings.MirrorUser ? 1 : 0);
+                PlayerPrefs.SetInt(TrackingModePrefKey, tracking.Settings.Mode == FaceTrackingMode.Advanced ? 1 : 0);
+                PlayerPrefs.Save();
+            };
+            capture.StateChanged += _ =>
+            {
+                if (!string.IsNullOrEmpty(capture.SelectedDevice)) PlayerPrefs.SetString(CameraPrefKey, capture.SelectedDevice);
+            };
+            tracking.EnabledChanged += enabled =>
+            {
+                PlayerPrefs.SetInt(TrackingEnabledPrefKey, enabled ? 1 : 0);
+                PlayerPrefs.Save();
+            };
+            diagnostics.AttachTracking(tracking);
+
+            _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics, capture, tracking);
         }
 
         private void Start()
@@ -112,15 +147,24 @@ namespace VRMCast.App
             {
                 _ = _services.Avatars.LoadAsync(startupPath);
             }
+
+            if (PlayerPrefs.GetInt(TrackingEnabledPrefKey, 0) != 0 && _services.Tracking.EngineAvailable)
+            {
+                _services.Tracking.SetEnabled(true);
+            }
         }
 
         private void Update()
         {
+            // Tracking is applied in Update so UniVRM (LateUpdate) sees this frame's bones and expressions.
+            _services.Tracking.Tick(Time.unscaledDeltaTime, Time.realtimeSinceStartupAsDouble);
+
             if (_services.Diagnostics.Tick(Time.unscaledDeltaTime))
             {
                 _view?.RefreshDiagnostics();
             }
         }
+
 
         private void LateUpdate()
         {

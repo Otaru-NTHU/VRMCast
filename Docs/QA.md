@@ -55,6 +55,35 @@ VRM Consortium sample models and models exported from VRoid Studio in both forma
     renders with real glyphs, never boxes, including Chinese file names in the file picker.
 16. **Command line.** `open -a VRMCast.app --args /path/to/model.vrm` loads that model at start.
 
+## Manual QA: MVP-B face tracking (PRD 42)
+
+Prerequisite: `Scripts/setup-mediapipe.sh`, then reopen Unity so the package resolves. Test with one VRM 0.x
+and one VRM 1.0 model, the built-in camera, and a standalone build.
+
+1. **Engine present.** The TRACKING section shows no yellow setup hint and "Start Tracking" is enabled. Without
+   the tarball the hint names the script and the button is disabled; nothing else breaks.
+2. **Camera.** The CAMERA dropdown lists the built-in camera (and USB / Continuity cameras when present).
+   Start Tracking → macOS asks for camera permission on first run; the small preview shows the webcam, mirrored
+   by default; Mirror preview toggles it. Cover the camera or unplug a USB camera: the preview state reads
+   "No frames, trying to recover…" and the avatar returns to neutral; plugging back in resumes within ~2 s and
+   the app never switches to another camera on its own.
+3. **Head.** Status reads "Tracking". Turn your head left: the avatar turns toward the same side of the screen
+   (mirror). Nod: the avatar nods. Tilt: the avatar tilts. If any axis goes the wrong way, note which one and use
+   the invert toggle under Advanced settings; report it so the default can be fixed.
+4. **Blink / eyes / mouth.** Close your left eye: the avatar's screen-left eye (its right) closes. Look left /
+   right / up / down: the avatar's eyes follow. Open your mouth: "aa" opens; smile: "happy".
+5. **Calibrate.** Sit slightly turned and press Calibrate; after ~1 s "Calibration complete" and the avatar
+   faces forward while you hold that pose; the status shows "calibrated". Clear Calibration restores raw.
+   Calibrating with no face in view fails with a message, not a silent no-op.
+6. **Rest.** With tracking on but no face, the avatar eases back to neutral over about a second, never snaps.
+   With tracking off the avatar stands with arms down, not in a T-pose.
+7. **Modes.** Basic vs Advanced: Advanced adds pucker/funnel/brows/frown/wide-eye expressions when the model
+   defines them; Basic never triggers angry/sad/surprised.
+8. **Performance.** Diagnostics: render 30 fps steady, tracking ≈ 30 fps, inference under ~25 ms on M3,
+   dropped stays near 0. Output stays 1920×1080 while tracking runs.
+9. **Both VRM versions.** Repeat 3–6 with the other VRM version: same behaviour, SpringBone still moves.
+10. **Persistence.** Quit and relaunch: camera choice, mirror, mode and tracking on/off are remembered.
+
 ## Known gaps in MVP-A
 
 - No native open-file dialog; the in-app browser or a command-line path is used instead.

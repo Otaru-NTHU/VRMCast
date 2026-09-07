@@ -22,6 +22,7 @@ namespace VRMCast.Editor
         public const string ThemePath = UiFolder + "/VRMCastRuntimeTheme.tss";
         public const string LayoutPath = UiFolder + "/Main.uxml";
         public const string MaterialPath = UiFolder + "/BackgroundImage.mat";
+        public const string FaceLandmarkerModelPath = "Packages/com.github.homuler.mediapipe/PackageResources/MediaPipe/face_landmarker_v2_with_blendshapes.bytes";
 
         [MenuItem("VRMCast/Setup/Rebuild Main Scene")]
         public static void RebuildFromMenu()
@@ -58,6 +59,9 @@ namespace VRMCast.Editor
             var so = new SerializedObject(bootstrap);
             so.FindProperty("_uiDocument").objectReferenceValue = document;
             so.FindProperty("_backgroundImageMaterial").objectReferenceValue = material;
+            var model = AssetDatabase.LoadAssetAtPath<TextAsset>(FaceLandmarkerModelPath);
+            if (model != null) so.FindProperty("_faceLandmarkerModel").objectReferenceValue = model;
+            else Debug.LogWarning("MainSceneBuilder: MediaPipe package not installed; face tracking model left unassigned. Run Scripts/setup-mediapipe.sh.");
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var lightObject = FindOrCreate(scene, "Key Light");

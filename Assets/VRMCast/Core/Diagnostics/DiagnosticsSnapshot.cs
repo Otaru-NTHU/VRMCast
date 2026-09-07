@@ -26,6 +26,15 @@ namespace VRMCast.Core.Diagnostics
         public string AppVersion { get; set; } = "";
         public string Platform { get; set; } = "";
 
+        public string TrackingStatus { get; set; } = "off";
+        public string TrackingEngine { get; set; } = "(none)";
+        public double TrackingFps { get; set; }
+        public double InferenceMs { get; set; }
+        public long TrackingDropped { get; set; }
+        public float FaceConfidence { get; set; }
+        public string CameraDevice { get; set; } = "(none)";
+        public string CameraResolution { get; set; } = "-";
+
         public string ToReport()
         {
             var sb = new StringBuilder();
@@ -39,6 +48,8 @@ namespace VRMCast.Core.Diagnostics
             sb.AppendLine($"Avatar: {AvatarName} [{AvatarVersion}] expressions={ExpressionCount} springBones={(SpringBones ? "yes" : "no")}");
             sb.AppendLine($"Background: {Background.Label()}");
             sb.AppendLine($"Framing: {Framing.Label()}");
+            sb.AppendLine($"Tracking: {TrackingStatus} engine={TrackingEngine} fps={TrackingFps.ToString("0.0", ci)} inference={InferenceMs.ToString("0.0", ci)} ms dropped={TrackingDropped} confidence={FaceConfidence.ToString("0.00", ci)}");
+            sb.AppendLine($"Camera: {CameraDevice} {CameraResolution}");
             return sb.ToString();
         }
     }

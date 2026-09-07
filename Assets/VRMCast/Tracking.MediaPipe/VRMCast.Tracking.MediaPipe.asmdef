@@ -1,0 +1,26 @@
+{
+    "name": "VRMCast.Tracking.MediaPipe",
+    "rootNamespace": "VRMCast.Tracking.MediaPipe",
+    "references": [
+        "VRMCast.Core",
+        "VRMCast.Runtime",
+        "GUID:04c4d86a70aa56c55a78c61f1ab1a56d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "VRMCAST_MEDIAPIPE"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.github.homuler.mediapipe",
+            "expression": "0.16.0",
+            "define": "VRMCAST_MEDIAPIPE"
+        }
+    ],
+    "noEngineReferences": false
+}

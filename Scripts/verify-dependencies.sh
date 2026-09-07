@@ -24,6 +24,17 @@ if grep -q '"com.vrmc.vrmshaders"' "$MANIFEST"; then
   echo "STALE    com.vrmc.vrmshaders is obsolete since UniVRM v0.125; remove it"; status=1
 fi
 
+EXPECTED_MEDIAPIPE="0.16.3"
+mp_line="$(grep '"com.github.homuler.mediapipe"' "$MANIFEST" || true)"
+if [[ "$mp_line" != *"com.github.homuler.mediapipe-$EXPECTED_MEDIAPIPE.tgz"* ]]; then
+  echo "MISMATCH com.github.homuler.mediapipe is not pinned to $EXPECTED_MEDIAPIPE: $mp_line"; status=1
+else
+  echo "ok       com.github.homuler.mediapipe @ $EXPECTED_MEDIAPIPE (tarball)"
+fi
+if [[ ! -f "$REPO_ROOT/Packages/com.github.homuler.mediapipe-$EXPECTED_MEDIAPIPE.tgz" ]]; then
+  echo "MISSING  Packages/com.github.homuler.mediapipe-$EXPECTED_MEDIAPIPE.tgz — run Scripts/setup-mediapipe.sh"; status=1
+fi
+
 version="$(sed -n 's/^m_EditorVersion: //p' "$REPO_ROOT/ProjectSettings/ProjectVersion.txt")"
 if [[ "$version" == "$EXPECTED_UNITY_MAJOR".* ]]; then
   echo "ok       Unity $version"
