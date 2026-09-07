@@ -227,6 +227,9 @@ namespace VRMCast.Tracking
                 if (sequence != _lastSequence)
                 {
                     _lastSequence = sequence;
+                    // Providers stamp frames with their own stopwatch; the solver and calibration compare against
+                    // the app clock, so rebase to `now` once the frame is accepted.
+                    frame.Timestamp = now;
                     Solver.Submit(frame);
                     if (_calibration.IsRunning && _calibration.Add(frame))
                     {
@@ -246,6 +249,7 @@ namespace VRMCast.Tracking
                 if (sequence != _lastPoseSequence)
                 {
                     _lastPoseSequence = sequence;
+                    poseFrame.Timestamp = now;
                     BodySolver.Submit(poseFrame);
                 }
             }
