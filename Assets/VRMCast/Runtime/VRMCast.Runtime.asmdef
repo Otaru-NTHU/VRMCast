@@ -4,6 +4,8 @@
     "references": [
         "VRMCast.Core",
         "UniGLTF",
+        "UniGLTF.Utils",
+        "UniHumanoid",
         "VRM",
         "VRM10"
     ],
