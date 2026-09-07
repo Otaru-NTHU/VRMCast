@@ -88,7 +88,7 @@ namespace VRMCast.Tracking.MediaPipe
             IsRunning = false;
             try
             {
-                _landmarker?.Dispose();
+                _landmarker?.Close();
             }
             catch (Exception e)
             {
