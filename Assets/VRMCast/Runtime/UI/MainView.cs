@@ -606,7 +606,18 @@ namespace VRMCast.UI
             };
         }
 
-        private void OnTrackingStatusChanged(TrackingCoordinator.Status status) => RefreshTrackingControls();
+        private bool _calibrationHintShown;
+
+        private void OnTrackingStatusChanged(TrackingCoordinator.Status status)
+        {
+            RefreshTrackingControls();
+            var calibrated = _services.Tracking.Settings.Calibration != null && _services.Tracking.Settings.Calibration.IsCalibrated;
+            if (status == TrackingCoordinator.Status.Tracking && !calibrated && !_calibrationHintShown)
+            {
+                _calibrationHintShown = true;
+                ShowMessage(_loc["tracking.pleaseCalibrate"], isError: false);
+            }
+        }
 
         private void OnCalibrationFinished(bool ok)
         {

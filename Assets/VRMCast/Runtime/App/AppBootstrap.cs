@@ -56,6 +56,7 @@ namespace VRMCast.App
         public const string LipSyncSensitivityPrefKey = "vrmcast.lipsync.sensitivity";
         public const string LipSyncGatePrefKey = "vrmcast.lipsync.gate";
         public const string BodyModePrefKey = "vrmcast.body.mode";
+        public const string CalibrationPrefKey = "vrmcast.tracking.calibration";
 
         private AppServices _services;
         private MainView _view;
@@ -123,9 +124,11 @@ namespace VRMCast.App
             var savedMic = PlayerPrefs.GetString(MicrophonePrefKey, string.Empty);
             if (!string.IsNullOrEmpty(savedMic)) microphone.Select(savedMic);
 
+            LoadCalibration(trackingSettings, body);
             var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings, _poseLandmarkerModel, lipSync, body, microphone);
             tracking.SettingsChanged += () =>
             {
+                SaveCalibration(tracking.Settings, tracking.Body);
                 PlayerPrefs.SetInt(MirrorPrefKey, tracking.Settings.MirrorUser ? 1 : 0);
                 PlayerPrefs.SetInt(TrackingModePrefKey, tracking.Settings.Mode == FaceTrackingMode.Advanced ? 1 : 0);
                 PlayerPrefs.SetInt(LipSyncModePrefKey, (int)tracking.LipSync.Mode);
@@ -221,6 +224,44 @@ namespace VRMCast.App
                 return OutputSettings.Default;
             }
         }
+
+        /// <summary>Calibration lives in PlayerPrefs until profiles (MVP-D) take over.</summary>
+        private static void SaveCalibration(FaceTrackingSettings face, BodyTrackingSettings body)
+        {
+            var c = face.Calibration ?? CalibrationData.Identity;
+            var parts = new[]
+            {
+                c.IsCalibrated ? "1" : "0", F(c.PitchRad), F(c.YawRad), F(c.RollRad), F(c.LookX), F(c.LookY), F(c.MouthOpen), F(c.Smile),
+                F(body.NeutralRollRad), F(body.NeutralYawRad), F(body.NeutralPitchRad),
+            };
+            PlayerPrefs.SetString(CalibrationPrefKey, string.Join(";", parts));
+        }
+
+        private static void LoadCalibration(FaceTrackingSettings face, BodyTrackingSettings body)
+        {
+            var raw = PlayerPrefs.GetString(CalibrationPrefKey, string.Empty);
+            if (string.IsNullOrEmpty(raw)) return;
+            var parts = raw.Split(';');
+            if (parts.Length < 11) return;
+            try
+            {
+                var values = new float[parts.Length];
+                for (var i = 1; i < parts.Length; i++) values[i] = float.Parse(parts[i], System.Globalization.CultureInfo.InvariantCulture);
+                if (parts[0] == "1")
+                {
+                    face.Calibration = new CalibrationData(true, values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+                }
+                body.NeutralRollRad = values[8];
+                body.NeutralYawRad = values[9];
+                body.NeutralPitchRad = values[10];
+            }
+            catch (FormatException)
+            {
+                PlayerPrefs.DeleteKey(CalibrationPrefKey);
+            }
+        }
+
+        private static string F(float v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
 
         private static AppLanguage LoadLanguagePreference()
         {
