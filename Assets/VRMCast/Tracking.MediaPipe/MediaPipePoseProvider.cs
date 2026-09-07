@@ -194,11 +194,11 @@ namespace VRMCast.Tracking.MediaPipe
                 if (result.poseLandmarks != null && result.poseLandmarks.Count > 0 && result.poseLandmarks[0].landmarks != null
                     && result.poseLandmarks[0].landmarks.Count >= PoseFrameBuilder.LandmarkCount)
                 {
-                    var image = result.poseLandmarks[0].landmarks;
+                    var imageLandmarks = result.poseLandmarks[0].landmarks;
                     normalized = new float[PoseFrameBuilder.LandmarkCount * 3];
                     for (var i = 0; i < PoseFrameBuilder.LandmarkCount; i++)
                     {
-                        var l = image[i];
+                        var l = imageLandmarks[i];
                         normalized[i * 3] = l.x;
                         normalized[i * 3 + 1] = l.y;
                         normalized[i * 3 + 2] = l.z;

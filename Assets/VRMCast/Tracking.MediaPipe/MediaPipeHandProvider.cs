@@ -191,11 +191,11 @@ namespace VRMCast.Tracking.MediaPipe
                 if (result.handLandmarks != null && h < result.handLandmarks.Count && result.handLandmarks[h].landmarks != null
                     && result.handLandmarks[h].landmarks.Count >= HandFrameBuilder.LandmarkCount)
                 {
-                    var image = result.handLandmarks[h].landmarks;
-                    hand.WristU = image[HandFrameBuilder.Wrist].x; hand.WristV = image[HandFrameBuilder.Wrist].y;
-                    hand.MiddleMcpU = image[HandFrameBuilder.MiddleMcp].x; hand.MiddleMcpV = image[HandFrameBuilder.MiddleMcp].y;
-                    hand.IndexMcpU = image[HandFrameBuilder.IndexMcp].x; hand.IndexMcpV = image[HandFrameBuilder.IndexMcp].y;
-                    hand.LittleMcpU = image[HandFrameBuilder.LittleMcp].x; hand.LittleMcpV = image[HandFrameBuilder.LittleMcp].y;
+                    var imageLandmarks = result.handLandmarks[h].landmarks;
+                    hand.WristU = imageLandmarks[HandFrameBuilder.Wrist].x; hand.WristV = imageLandmarks[HandFrameBuilder.Wrist].y;
+                    hand.MiddleMcpU = imageLandmarks[HandFrameBuilder.MiddleMcp].x; hand.MiddleMcpV = imageLandmarks[HandFrameBuilder.MiddleMcp].y;
+                    hand.IndexMcpU = imageLandmarks[HandFrameBuilder.IndexMcp].x; hand.IndexMcpV = imageLandmarks[HandFrameBuilder.IndexMcp].y;
+                    hand.LittleMcpU = imageLandmarks[HandFrameBuilder.LittleMcp].x; hand.LittleMcpV = imageLandmarks[HandFrameBuilder.LittleMcp].y;
                 }
                 if (first == null) first = hand; else second = hand;
             }
