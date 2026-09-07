@@ -87,6 +87,9 @@ namespace VRMCast.UI
         private Message _lastLoadError;
         private IVisualElementScheduledItem _bannerHide;
 
+        /// <summary>True while dropdown choices are being rebuilt; Unity raises change events during that, which must be ignored.</summary>
+        private bool _rebuildingChoices;
+
         public MainView(VisualElement root, AppServices services)
         {
             _root = root ?? throw new ArgumentNullException(nameof(root));
@@ -168,8 +171,15 @@ namespace VRMCast.UI
 
         private static int ChoiceIndex(DropdownField field, string value)
         {
-            var index = field.choices.IndexOf(value);
+            var index = field.choices != null ? field.choices.IndexOf(value) : -1;
             return index < 0 ? 0 : index;
+        }
+
+        private static void SetChoice(DropdownField field, int index)
+        {
+            var choices = field.choices;
+            if (choices == null || index < 0 || index >= choices.Count) return;
+            field.SetValueWithoutNotify(choices[index]);
         }
 
         private List<string> Localized(string[] keys)
@@ -188,6 +198,7 @@ namespace VRMCast.UI
             _language.choices = names;
             _language.RegisterValueChangedCallback(evt =>
             {
+                if (_rebuildingChoices) return;
                 _loc.Language = LanguageOrder[ChoiceIndex(_language, evt.newValue)];
             });
         }
@@ -200,6 +211,19 @@ namespace VRMCast.UI
 
         /// <summary>Writes every static string and rebuilds dropdown choices for the current language.</summary>
         private void ApplyLanguage()
+        {
+            _rebuildingChoices = true;
+            try
+            {
+                ApplyLanguageCore();
+            }
+            finally
+            {
+                _rebuildingChoices = false;
+            }
+        }
+
+        private void ApplyLanguageCore()
         {
             _language.SetValueWithoutNotify(_loc.Language.NativeName());
             _language.label = _loc["header.language"];
@@ -270,7 +294,7 @@ namespace VRMCast.UI
             {
                 _lastVrmPath = path;
                 _lastVrmDirectory = Path.GetDirectoryName(path);
-                _importVersion.SetValueWithoutNotify(_importVersion.choices[0]);
+                SetChoice(_importVersion, 0);
                 _importAdvanced.style.display = DisplayStyle.None;
                 _ = _services.Avatars.LoadAsync(path);
             });
@@ -356,7 +380,10 @@ namespace VRMCast.UI
         private void BindFraming()
         {
             _framingPreset.RegisterValueChangedCallback(evt =>
-                _services.Camera.SetPreset(FramingOrder[ChoiceIndex(_framingPreset, evt.newValue)]));
+            {
+                if (_rebuildingChoices) return;
+                _services.Camera.SetPreset(FramingOrder[ChoiceIndex(_framingPreset, evt.newValue)]);
+            });
 
             _fov.lowValue = AvatarCameraState.MinFovDeg;
             _fov.highValue = AvatarCameraState.MaxFovDeg;
@@ -370,7 +397,7 @@ namespace VRMCast.UI
         private void RefreshCameraControls()
         {
             var state = _services.Camera.State;
-            _framingPreset.SetValueWithoutNotify(_framingPreset.choices[IndexOf(FramingOrder, state.Preset)]);
+            SetChoice(_framingPreset, IndexOf(FramingOrder, state.Preset));
             _fov.SetValueWithoutNotify(state.FovDeg);
             _fovValue.text = $"{state.FovDeg:0}°";
         }
@@ -380,7 +407,10 @@ namespace VRMCast.UI
         private void BindBackground()
         {
             _backgroundMode.RegisterValueChangedCallback(evt =>
-                _services.Background.SetMode(BackgroundOrder[ChoiceIndex(_backgroundMode, evt.newValue)]));
+            {
+                if (_rebuildingChoices) return;
+                _services.Background.SetMode(BackgroundOrder[ChoiceIndex(_backgroundMode, evt.newValue)]);
+            });
 
             _colorHex.RegisterCallback<FocusOutEvent>(_ => ApplyColorField());
             _colorHex.RegisterCallback<KeyDownEvent>(evt =>
@@ -399,7 +429,10 @@ namespace VRMCast.UI
             Q<Button>("clear-image").clicked += () => _services.Background.ClearImage();
 
             _imageFit.RegisterValueChangedCallback(evt =>
-                _services.Background.SetImageFit(FitOrder[ChoiceIndex(_imageFit, evt.newValue)]));
+            {
+                if (_rebuildingChoices) return;
+                _services.Background.SetImageFit(FitOrder[ChoiceIndex(_imageFit, evt.newValue)]);
+            });
         }
 
         private void ApplyColorField()
@@ -418,7 +451,7 @@ namespace VRMCast.UI
         private void RefreshBackgroundControls()
         {
             var settings = _services.Background.Settings;
-            _backgroundMode.SetValueWithoutNotify(_backgroundMode.choices[IndexOf(BackgroundOrder, settings.Mode)]);
+            SetChoice(_backgroundMode, IndexOf(BackgroundOrder, settings.Mode));
 
             var showColor = settings.Mode == BackgroundMode.SolidColor || settings.Mode == BackgroundMode.ChromaKey;
             _colorRow.style.display = showColor ? DisplayStyle.Flex : DisplayStyle.None;
@@ -432,7 +465,7 @@ namespace VRMCast.UI
 
             _imageRows.style.display = settings.Mode == BackgroundMode.Image ? DisplayStyle.Flex : DisplayStyle.None;
             _imageName.text = string.IsNullOrEmpty(settings.ImagePath) ? _loc["background.noImage"] : Path.GetFileName(settings.ImagePath);
-            _imageFit.SetValueWithoutNotify(_imageFit.choices[IndexOf(FitOrder, settings.ImageFit)]);
+            SetChoice(_imageFit, IndexOf(FitOrder, settings.ImageFit));
             RefreshDiagnostics();
         }
 
@@ -442,6 +475,7 @@ namespace VRMCast.UI
         {
             _outputQuality.RegisterValueChangedCallback(evt =>
             {
+                if (_rebuildingChoices) return;
                 var index = ChoiceIndex(_outputQuality, evt.newValue);
                 if (index < OutputSettings.Presets.Count) _services.Render.SetOutputSettings(OutputSettings.Presets[index].Settings);
             });
@@ -461,7 +495,7 @@ namespace VRMCast.UI
             {
                 if (OutputSettings.Presets[i].Settings == settings)
                 {
-                    _outputQuality.SetValueWithoutNotify(_outputQuality.choices[i]);
+                    SetChoice(_outputQuality, i);
                     break;
                 }
             }
