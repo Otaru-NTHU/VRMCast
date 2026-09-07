@@ -224,7 +224,14 @@ namespace VRMCast.Tracking
             SettingsChanged?.Invoke();
         }
 
-        public void NotifySettingsChanged() => SettingsChanged?.Invoke();
+        /// <summary>Settings were edited directly (UI sliders, profile restore): re-sync the optional providers too.</summary>
+        public void NotifySettingsChanged()
+        {
+            SyncMicrophone();
+            SyncPoseProvider();
+            SyncHandProvider();
+            SettingsChanged?.Invoke();
+        }
 
         /// <summary>Starts the neutral-pose capture (PRD 12). Completes on its own after the window.</summary>
         public bool StartCalibration()

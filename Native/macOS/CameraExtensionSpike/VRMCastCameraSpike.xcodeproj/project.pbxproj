@@ -347,7 +347,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_HOST_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -365,7 +365,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_HOST_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -383,7 +383,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike.Camera";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_HOST_BUNDLE_ID).Camera";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -402,7 +402,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike.Camera";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_HOST_BUNDLE_ID).Camera";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;

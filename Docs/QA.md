@@ -153,6 +153,22 @@ criteria (PRD 43 definition of done, PRD 37.6):
 
 Record macOS version, Xcode version, OBS version, and whether approval required a reboot.
 
+## Manual QA: MVP-E virtual camera from VRMCast.app (PRD 37.6)
+
+Package with `Scripts/package-macos.sh --install DEVELOPMENT_TEAM=<TeamID>` (see `Docs/VirtualCamera.md`).
+
+1. **Install.** OUTPUT → Install / Enable Virtual Camera. The status walks through "asking macOS" → "waiting for
+   approval" → after allowing in System Settings, "enabled". The Install button never silently fails: every error
+   shows its code.
+2. **Stream.** Load an avatar, Start Output. OBS → Video Capture Device → VRM Live Camera shows the avatar at
+   1920×1080; OBS Stats reads ~30 fps for every output preset (720p/1440p/4K are scaled).
+3. **Stop.** Stop Output: the camera shows the extension's red fallback pattern within half a second, never a
+   frozen avatar. Start again: the avatar returns.
+4. **OBS restart** while streaming: the device is still listed and live.
+5. **Ten minutes** of output with tracking on: no dropped-frame growth in Copy Diagnostics beyond occasional
+   single drops, flat memory.
+6. **Remove.** OUTPUT → Remove: the device disappears from OBS; Install brings it back without a reboot.
+
 ## Known gaps in MVP-A
 
 - No native open-file dialog; the in-app browser or a command-line path is used instead.

@@ -11,6 +11,7 @@ using VRMCast.Core.Camera;
 using VRMCast.Core.Localization;
 using VRMCast.Core.Rendering;
 using VRMCast.Core.Tracking;
+using VRMCast.Output;
 using VRMCast.Core.Vrm;
 using VRMCast.Hotkeys;
 using VRMCast.Profiles;
@@ -147,6 +148,8 @@ namespace VRMCast.UI
         private readonly Label _statusResolution;
         private readonly Label _statusRenderFps;
         private readonly Label _statusOutput;
+        private readonly Label _vcamTitle, _vcamStatus, _vcamHint;
+        private readonly Button _vcamInstall, _vcamUninstall;
         private readonly Button _toggleOutput;
 
         private string _lastVrmPath;
@@ -248,6 +251,11 @@ namespace VRMCast.UI
             _statusResolution = Q<Label>("status-resolution");
             _statusRenderFps = Q<Label>("status-render-fps");
             _statusOutput = Q<Label>("status-output");
+            _vcamTitle = Q<Label>("vcam-title");
+            _vcamStatus = Q<Label>("vcam-status");
+            _vcamHint = Q<Label>("vcam-hint");
+            _vcamInstall = Q<Button>("vcam-install");
+            _vcamUninstall = Q<Button>("vcam-uninstall");
             _toggleOutput = Q<Button>("toggle-output");
 
             _filePicker = new FilePickerView(_root, _loc);
@@ -513,6 +521,10 @@ namespace VRMCast.UI
             _outputQuality.label = _loc["output.quality"];
             RebuildChoices(_outputQuality, OutputPresetLabels());
             Q<Label>("output-hint").text = _loc["output.hint"];
+            _vcamTitle.text = _loc["vcam.title"];
+            _vcamInstall.text = _loc["vcam.install"];
+            _vcamUninstall.text = _loc["vcam.uninstall"];
+            RefreshVirtualCamera();
 
             Q<Label>("section-diagnostics").text = _loc["section.diagnostics"];
             Q<Button>("copy-diagnostics").text = _loc["diag.copy"];
@@ -1070,10 +1082,52 @@ namespace VRMCast.UI
 
             _toggleOutput.clicked += () =>
             {
-                var output = _services.DebugOutput;
+                var output = PrimaryOutput;
                 if (output.IsRunning) _services.Outputs.Stop(output);
-                else _services.Outputs.Start(output);
+                else if (!_services.Outputs.Start(output) || !output.IsRunning)
+                {
+                    var vcam = _services.VirtualCamera;
+                    ShowMessage(vcam != null && !string.IsNullOrEmpty(vcam.LastError) ? _loc.Format("vcam.openFailed", vcam.LastError) : _loc["vcam.openFailed.generic"], isError: true);
+                }
+                RefreshOutputStatus();
             };
+            _vcamInstall.clicked += () => _services.VirtualCameraService?.Install();
+            _vcamUninstall.clicked += () => _services.VirtualCameraService?.Uninstall();
+            if (_services.VirtualCameraService != null) _services.VirtualCameraService.Changed += RefreshVirtualCamera;
+        }
+
+        /// <summary>The virtual camera when the bridge is available on this machine, otherwise the debug consumer.</summary>
+        private IFrameOutput PrimaryOutput =>
+            _services.VirtualCamera != null && _services.VirtualCamera.IsAvailable ? (IFrameOutput)_services.VirtualCamera : _services.DebugOutput;
+
+        private void RefreshVirtualCamera()
+        {
+            var svc = _services.VirtualCameraService;
+            if (svc == null || !svc.IsSupported)
+            {
+                _vcamStatus.text = _loc.Format("vcam.status.unsupported", svc != null ? svc.UnsupportedReason : "");
+                _vcamInstall.SetEnabled(false);
+                _vcamUninstall.SetEnabled(false);
+                _vcamHint.text = _loc["vcam.hint.unsupported"];
+                return;
+            }
+            string key;
+            switch (svc.State)
+            {
+                case FrameBridgeNative.ExtensionState.NotInstalled: key = "vcam.status.notInstalled"; break;
+                case FrameBridgeNative.ExtensionState.Requesting: key = "vcam.status.requesting"; break;
+                case FrameBridgeNative.ExtensionState.AwaitingApproval: key = "vcam.status.awaitingApproval"; break;
+                case FrameBridgeNative.ExtensionState.Enabled: key = svc.DevicePresent ? "vcam.status.ready" : "vcam.status.enabledNoDevice"; break;
+                case FrameBridgeNative.ExtensionState.NeedsReboot: key = "vcam.status.needsReboot"; break;
+                case FrameBridgeNative.ExtensionState.Failed: key = "vcam.status.failed"; break;
+                case FrameBridgeNative.ExtensionState.Uninstalling: key = "vcam.status.uninstalling"; break;
+                default: key = svc.DevicePresent ? "vcam.status.ready" : "vcam.status.unknown"; break;
+            }
+            _vcamStatus.text = _loc.Format(key, svc.InstalledVersion, svc.Message);
+            var canRequest = svc.State != FrameBridgeNative.ExtensionState.Requesting;
+            _vcamInstall.SetEnabled(canRequest && svc.ExtensionBundled);
+            _vcamUninstall.SetEnabled(canRequest && svc.State != FrameBridgeNative.ExtensionState.NotInstalled);
+            _vcamHint.text = svc.ExtensionBundled ? _loc["vcam.hint"] : _loc["vcam.hint.notBundled"];
         }
 
         private void OnOutputSettingsChanged(OutputSettings settings)
@@ -1093,7 +1147,7 @@ namespace VRMCast.UI
 
         private void RefreshOutputStatus()
         {
-            var running = _services.DebugOutput.IsRunning;
+            var running = PrimaryOutput.IsRunning;
             _toggleOutput.text = _loc[running ? "output.stop" : "output.start"];
             _toggleOutput.EnableInClassList("running", running);
             _statusOutput.text = _loc[running ? "status.outputOn" : "status.outputOff"];
@@ -1164,6 +1218,7 @@ namespace VRMCast.UI
             _services.Avatars.LoadingStateChanged -= OnLoadingStateChanged;
             _services.Render.SettingsChanged -= OnOutputSettingsChanged;
             _services.Outputs.OutputsChanged -= RefreshOutputStatus;
+            if (_services.VirtualCameraService != null) _services.VirtualCameraService.Changed -= RefreshVirtualCamera;
             _services.Camera.StateChanged -= RefreshCameraControls;
             _services.Background.SettingsChanged -= RefreshBackgroundControls;
             _services.Camera2D.StateChanged -= OnCameraStateChanged;

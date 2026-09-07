@@ -578,3 +578,9 @@ Toggle .unity-toggle__checkmark {
 .app.performance .header {
     display: none;
 }
+
+.subsection-title {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    -unity-font-style: bold;
+}

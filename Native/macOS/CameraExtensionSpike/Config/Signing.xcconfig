@@ -13,6 +13,11 @@ DEVELOPMENT_TEAM =
 // <TeamID>.<prefix>.camera (it must start with an App Group the extension belongs to).
 VRMCAST_BUNDLE_PREFIX = com.vrmcast
 
+// Bundle identifier of the app that embeds the extension. The spike host uses <prefix>.CameraSpike;
+// Scripts/package-macos.sh overrides this with the Unity app's identifier so the extension becomes
+// <unity id>.Camera, which macOS requires for an embedded system extension.
+VRMCAST_HOST_BUNDLE_ID = $(VRMCAST_BUNDLE_PREFIX).CameraSpike
+
 CODE_SIGN_STYLE = Automatic
 MARKETING_VERSION = 0.1.0
 CURRENT_PROJECT_VERSION = 1

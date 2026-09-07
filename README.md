@@ -44,6 +44,8 @@ Scripts/run-unity-tests.sh       # same tests inside the Unity Test Runner (Edit
 Scripts/verify-dependencies.sh   # checks pinned dependency versions
 Scripts/check-xcodeproj.py Native/macOS/CameraExtensionSpike/VRMCastCameraSpike.xcodeproj  # project file sanity
 Scripts/build-camera-spike.sh --install DEVELOPMENT_TEAM=<TeamID>   # builds the camera extension spike (Xcode)
+Scripts/build-frame-bridge.sh                                        # native plugin for the virtual camera (clang)
+Scripts/package-macos.sh --install DEVELOPMENT_TEAM=<TeamID>         # embeds + signs the camera extension in VRMCast.app
 ```
 
 Manual QA steps for each milestone are in [Docs/QA.md](Docs/QA.md).
@@ -60,7 +62,7 @@ Assets/VRMCast/
   UI/         Main.uxml, Main.uss, PanelSettings, theme, background material
   Scenes/     Main.unity
 Docs/         PRD, Architecture, QA, Tracking, VirtualCamera
-Native/macOS/ Camera Extension spike (Xcode), later the Unity frame bridge and installer helper (MVP-E)
+Native/macOS/ Camera Extension (Xcode project) and the Unity frame bridge plugin source (MVP-E)
 Scripts/      build, test and dependency scripts
 ```
 

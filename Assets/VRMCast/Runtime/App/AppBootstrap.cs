@@ -91,7 +91,9 @@ namespace VRMCast.App
             outputs.SetAlphaProvider(() => background.Settings.RequiresAlpha);
             var preview = new PreviewOutput();
             var debugOutput = new NullOutput();
+            var virtualCamera = new MacVirtualCameraOutput();
             outputs.Register(preview);
+            outputs.Register(virtualCamera);
             outputs.Register(debugOutput);
             outputs.Start(preview);
 
@@ -112,6 +114,8 @@ namespace VRMCast.App
             _hotkeys = new HotkeyService();
             _hotkeys.SetBindings(Core.Hotkeys.HotkeyBinding.Defaults());
             _services.Hotkeys = _hotkeys;
+            _services.VirtualCamera = virtualCamera;
+            _services.VirtualCameraService = new VirtualCameraService();
 
             _profiles = new ProfileService(Application.persistentDataPath);
             _profiles.Bind(CaptureProfile, ApplyProfile);
@@ -248,6 +252,7 @@ namespace VRMCast.App
             // UniVRM (LateUpdate) sees this frame's bones and expressions.
             _services.Tracking.SetExpressionOverrides(_hotkeys.Tick(Time.unscaledDeltaTime));
             _services.Tracking.Tick(Time.unscaledDeltaTime, Time.realtimeSinceStartupAsDouble);
+            _services.VirtualCameraService?.Tick(Time.realtimeSinceStartup);
             _profiles.Tick();
 
             _view?.TickFast();

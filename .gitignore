@@ -113,3 +113,7 @@ xcuserdata/
 *.xcworkspace/xcuserdata/
 DerivedData/
 /Native/macOS/*/build/
+# Native plugin binary built by Scripts/build-frame-bridge.sh (source in Native/macOS/FrameBridge)
+/Assets/Plugins/macOS/VRMCastFrameBridge.bundle/
+/Assets/Plugins/macOS/VRMCastFrameBridge.bundle.meta
+/Native/macOS/*/build-embed/

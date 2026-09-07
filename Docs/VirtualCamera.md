@@ -10,8 +10,9 @@ done on real hardware.
 | Step | State |
 | --- | --- |
 | Camera Extension spike (`Native/macOS/CameraExtensionSpike`) | written, awaiting on-device validation |
-| Unity frame bridge (`MacVirtualCameraOutput` + Objective-C++ plugin) | not started, blocked on the spike |
-| Activation UI inside VRMCast (PRD 20.3) | not started |
+| Unity frame bridge (`MacVirtualCameraOutput` + `Native/macOS/FrameBridge` plugin) | written, awaiting on-device validation |
+| Activation UI inside VRMCast (PRD 20.3) | written (OUTPUT section) |
+| Packaging: extension embedded in VRMCast.app, signed (`Scripts/package-macos.sh`) | written, awaiting on-device validation |
 
 ## Pipeline
 
@@ -92,6 +93,46 @@ Scripts/check-xcodeproj.py        structural check of the project file, runs wit
     `Config/Signing.xcconfig`); "Sign to Run Locally" cannot carry the system-extension entitlement.
     The app must be launched from `/Applications` unless `systemextensionsctl developer on` is active.
     Distribution needs Developer ID + notarization; the extension is notarized as part of the app.
+
+## The Unity bridge
+
+```
+Native/macOS/FrameBridge/VRMCastFrameBridge.mm   Objective-C++ plugin, plain C entry points
+Scripts/build-frame-bridge.sh                    clang → Assets/Plugins/macOS/VRMCastFrameBridge.bundle (ignored by git)
+Assets/VRMCast/Runtime/Output/FrameBridgeNative.cs        P/Invoke, availability probe (missing plugin = not available)
+Assets/VRMCast/Runtime/Output/MacVirtualCameraOutput.cs   IFrameOutput: AsyncGPUReadback (BGRA) → bridge → sink stream
+Assets/VRMCast/Runtime/Output/VirtualCameraService.cs     install / status of the extension (PRD 20.3)
+Scripts/package-macos.sh                         embeds and signs the extension inside VRMCast.app
+```
+
+- `MacVirtualCameraOutput` is registered as an output and becomes the target of **Start Output** whenever the
+  plugin is available; otherwise the debug consumer runs as before. It scales any output preset into a 1920×1080
+  texture, throttles to 30 fps, keeps at most two GPU readbacks in flight, and flips rows because Unity readbacks
+  are bottom-up. Failures to open the device (extension missing or not approved) show a banner with the reason.
+- `vrmcast_vcam_send` copies the BGRA rows into an IOSurface-backed `CVPixelBuffer` from a pool, wraps it in a
+  `CMSampleBuffer` and enqueues it on the sink stream's `CMSimpleQueue`. A full queue drops the frame (the
+  extension drains at 30 fps), so the renderer is never blocked.
+- The OUTPUT section shows the extension state (not installed / waiting for approval / enabled / failed …) with
+  Install and Remove buttons. The state is polled once a second from `OSSystemExtensionRequest` results.
+- The extension's identifier is the app's identifier plus `.Camera` (`tech.hilight.vrmcast.Camera` for the Unity
+  app). `Scripts/package-macos.sh` builds the extension target with `VRMCAST_HOST_BUNDLE_ID` set to the app's
+  identifier, copies it into `VRMCast.app/Contents/Library/SystemExtensions/`, and signs the extension, the
+  plugins and the app (hardened runtime, system-extension entitlement, app group `<TeamID>.<prefix>`). Unity's own
+  build (`Scripts/build-macos.sh`) stays unchanged; packaging is a separate step because it needs a Developer ID.
+
+### Trying it
+
+```
+Scripts/build-frame-bridge.sh                                   # plugin (before the Unity build)
+Scripts/build-macos.sh                                          # Unity build → Builds/macOS/VRMCast.app
+Scripts/package-macos.sh --install DEVELOPMENT_TEAM=ABCDE12345  # embed + sign + copy to /Applications
+open /Applications/VRMCast.app
+```
+
+In the app: OUTPUT → Install / Enable Virtual Camera → approve in System Settings → status reads enabled →
+Start Output → OBS → Video Capture Device → VRM Live Camera shows the avatar. In the Unity editor the plugin
+also loads (after `build-frame-bridge.sh`) but the extension can only be installed from a packaged app; the
+editor can still send frames to an extension installed by the spike app or a packaged build.
 
 ## Building and testing the spike
 

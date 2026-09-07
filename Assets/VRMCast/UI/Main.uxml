@@ -156,6 +156,13 @@
                 <ui:VisualElement class="section">
                     <ui:Label name="section-output" text="" class="section-title" />
                     <ui:DropdownField name="output-quality" label="Quality" />
+                    <ui:Label name="vcam-title" text="" class="subsection-title" />
+                    <ui:Label name="vcam-status" text="" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="vcam-install" text="" />
+                        <ui:Button name="vcam-uninstall" text="" />
+                    </ui:VisualElement>
+                    <ui:Label name="vcam-hint" text="" class="hint" />
                     <ui:Label name="output-hint" text="" class="hint" />
                 </ui:VisualElement>
 

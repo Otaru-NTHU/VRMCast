@@ -27,6 +27,8 @@ namespace VRMCast.App
         public OutputService Outputs { get; }
         public PreviewOutput Preview { get; }
         public NullOutput DebugOutput { get; }
+        public MacVirtualCameraOutput VirtualCamera { get; internal set; }
+        public VirtualCameraService VirtualCameraService { get; internal set; }
         public DiagnosticsService Diagnostics { get; }
         public CameraCaptureService Camera2D { get; }
         public TrackingCoordinator Tracking { get; }
