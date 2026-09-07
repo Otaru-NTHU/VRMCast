@@ -32,6 +32,7 @@ namespace VRMCast.Tracking.MediaPipe
 
         private FaceLandmarker _landmarker;
         private TextureFramePool _pool;
+        private RenderTexture _scaled;
         private int _poolWidth, _poolHeight;
         private long _lastTimestampMs = -1;
         private double _lastSubmitSeconds = -1;
@@ -97,6 +98,7 @@ namespace VRMCast.Tracking.MediaPipe
             _landmarker = null;
             _pool?.Dispose();
             _pool = null;
+            ReleaseScaled();
             lock (_submitGate) _submitTimes.Clear();
             _latest.Clear();
         }
@@ -117,9 +119,10 @@ namespace VRMCast.Tracking.MediaPipe
             EnsurePool(tex.width, tex.height);
             if (!_pool.TryGetTextureFrame(out var textureFrame)) return;
 
-            // Tracking resolution is independent of the camera and the 1080p output (PRD 2, D-006): the blit inside
-            // ReadTextureOnCPU downsamples to the pool size.
-            textureFrame.ReadTextureOnCPU(tex, flipHorizontally: false, flipVertically: _flipVertically);
+            // Tracking resolution is independent of the camera and the 1080p output (PRD 2, D-006). TextureFrame
+            // crops rather than scales, so the whole camera frame is downscaled on the GPU first.
+            Graphics.Blit(tex, _scaled);
+            textureFrame.ReadTextureOnCPU(_scaled, flipHorizontally: false, flipVertically: _flipVertically);
             var image = textureFrame.BuildCPUImage();
             textureFrame.Release();
 
@@ -155,8 +158,19 @@ namespace VRMCast.Tracking.MediaPipe
             if (_pool != null && _poolWidth == width && _poolHeight == height) return;
             _pool?.Dispose();
             _pool = new TextureFramePool(width, height, TextureFormat.RGBA32, PoolSize);
+            ReleaseScaled();
+            _scaled = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32) { name = "TrackingInput" };
+            _scaled.Create();
             _poolWidth = width;
             _poolHeight = height;
+        }
+
+        private void ReleaseScaled()
+        {
+            if (_scaled == null) return;
+            _scaled.Release();
+            UnityEngine.Object.Destroy(_scaled);
+            _scaled = null;
         }
 
         /// <summary>Worker thread: converts the result and publishes it. Never touches Unity objects.</summary>

@@ -29,6 +29,7 @@ namespace VRMCast.Tracking.MediaPipe
 
         private PoseLandmarker _landmarker;
         private TextureFramePool _pool;
+        private RenderTexture _scaled;
         private int _poolWidth, _poolHeight;
         private long _lastTimestampMs = -1;
         private double _lastSubmitSeconds = -1;
@@ -83,6 +84,7 @@ namespace VRMCast.Tracking.MediaPipe
             _landmarker = null;
             _pool?.Dispose();
             _pool = null;
+            ReleaseScaled();
             lock (_submitGate) _submitTimes.Clear();
             _latest.Clear();
         }
@@ -102,7 +104,9 @@ namespace VRMCast.Tracking.MediaPipe
             EnsurePool(tex.width, tex.height);
             if (!_pool.TryGetTextureFrame(out var textureFrame)) return;
 
-            textureFrame.ReadTextureOnCPU(tex, flipHorizontally: false, flipVertically: FlipVertically);
+            // TextureFrame crops rather than scales: downscale the whole frame on the GPU first.
+            Graphics.Blit(tex, _scaled);
+            textureFrame.ReadTextureOnCPU(_scaled, flipHorizontally: false, flipVertically: FlipVertically);
             var image = textureFrame.BuildCPUImage();
             textureFrame.Release();
 
@@ -136,8 +140,19 @@ namespace VRMCast.Tracking.MediaPipe
             if (_pool != null && _poolWidth == width && _poolHeight == height) return;
             _pool?.Dispose();
             _pool = new TextureFramePool(width, height, TextureFormat.RGBA32, PoolSize);
+            ReleaseScaled();
+            _scaled = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32) { name = "TrackingInput" };
+            _scaled.Create();
             _poolWidth = width;
             _poolHeight = height;
+        }
+
+        private void ReleaseScaled()
+        {
+            if (_scaled == null) return;
+            _scaled.Release();
+            UnityEngine.Object.Destroy(_scaled);
+            _scaled = null;
         }
 
         private void OnResult(PoseLandmarkerResult result, Image image, long timestampMs)
