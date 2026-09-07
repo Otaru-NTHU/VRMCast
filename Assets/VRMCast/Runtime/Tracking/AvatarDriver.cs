@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using VRMCast.Avatar;
 using VRMCast.Core.Tracking;
@@ -16,6 +17,11 @@ namespace VRMCast.Tracking
 
         private readonly IAvatarService _avatars;
         private string[] _lastExpressionNames = new string[0];
+        private IReadOnlyDictionary<string, float> _overrides;
+        private readonly Dictionary<string, float> _merged = new Dictionary<string, float>();
+
+        /// <summary>Expression weights layered on top of tracking (hotkeys). Max wins per expression.</summary>
+        public void SetExpressionOverrides(IReadOnlyDictionary<string, float> overrides) => _overrides = overrides;
 
         public AvatarDriver(IAvatarService avatars)
         {
@@ -55,20 +61,35 @@ namespace VRMCast.Tracking
 
             avatar.SetLookAt(pose.LookYawDeg, pose.LookPitchDeg);
 
+            ApplyExpressions(avatar, pose.Expressions);
+        }
+
+        private void ApplyExpressions(LoadedAvatar avatar, IReadOnlyDictionary<string, float> tracked)
+        {
+            _merged.Clear();
+            foreach (var kv in tracked) _merged[kv.Key] = kv.Value;
+            if (_overrides != null)
+            {
+                foreach (var kv in _overrides)
+                {
+                    _merged[kv.Key] = _merged.TryGetValue(kv.Key, out var existing) ? Mathf.Max(existing, kv.Value) : kv.Value;
+                }
+            }
+
             // Zero expressions that were driven last frame but are absent now so nothing sticks.
             foreach (var name in _lastExpressionNames)
             {
-                if (!pose.Expressions.ContainsKey(name)) avatar.SetExpressionWeight(name, 0f);
+                if (!_merged.ContainsKey(name)) avatar.SetExpressionWeight(name, 0f);
             }
-            foreach (var kv in pose.Expressions)
+            foreach (var kv in _merged)
             {
                 avatar.SetExpressionWeight(kv.Key, kv.Value);
             }
-            if (_lastExpressionNames.Length != pose.Expressions.Count)
+            if (_lastExpressionNames.Length != _merged.Count)
             {
-                _lastExpressionNames = new string[pose.Expressions.Count];
+                _lastExpressionNames = new string[_merged.Count];
             }
-            pose.Expressions.Keys.CopyTo(_lastExpressionNames, 0);
+            _merged.Keys.CopyTo(_lastExpressionNames, 0);
         }
 
         /// <summary>Idle pose (arms down, neutral head) used when tracking is off.</summary>
@@ -79,8 +100,10 @@ namespace VRMCast.Tracking
             avatar.ApplyPose(Quaternion.identity, Quaternion.identity, Quaternion.identity, Quaternion.identity,
                 Quaternion.Euler(0f, 0f, ArmRestAngleDeg), Quaternion.Euler(0f, 0f, -ArmRestAngleDeg));
             avatar.SetLookAt(0f, 0f);
-            foreach (var name in _lastExpressionNames) avatar.SetExpressionWeight(name, 0f);
-            _lastExpressionNames = new string[0];
+            // Hotkeys keep working while tracking is off.
+            ApplyExpressions(avatar, EmptyExpressions);
         }
+
+        private static readonly Dictionary<string, float> EmptyExpressions = new Dictionary<string, float>();
     }
 }

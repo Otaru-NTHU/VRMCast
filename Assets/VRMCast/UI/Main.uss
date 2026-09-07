@@ -501,3 +501,80 @@ Toggle .unity-toggle__checkmark {
     left: 40%;
     background-color: rgb(240, 190, 90);
 }
+
+/* Profiles, hotkeys, performance mode */
+
+.header-profile-select {
+    width: 220px;
+    margin: 0 6px 0 0;
+}
+
+.header-profile-select > Label {
+    min-width: 0;
+    margin-right: 6px;
+    color: var(--text-dim);
+}
+
+.header-button {
+    margin: 0 6px 0 0;
+}
+
+.profile-dialog {
+    height: 520px;
+}
+
+#profile-list {
+    height: 180px;
+    margin: 6px 0;
+    background-color: var(--bg);
+    border-width: 1px;
+    border-color: var(--border);
+    border-radius: 4px;
+}
+
+.hotkey-row {
+    margin-top: 1px;
+    margin-bottom: 1px;
+}
+
+.hotkey-key {
+    width: 52px;
+    -unity-font-style: bold;
+}
+
+.hotkey-expression {
+    width: 96px;
+    margin: 1px;
+}
+
+.hotkey-mode {
+    width: 74px;
+    margin: 1px;
+}
+
+.hotkey-intensity {
+    width: 46px;
+    margin: 1px;
+}
+
+.hotkey-expression > Label, .hotkey-mode > Label {
+    display: none;
+}
+
+.perf-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.55);
+    color: rgb(220, 220, 224);
+    font-size: 11px;
+    white-space: normal;
+}
+
+.app.performance .sidebar,
+.app.performance .status-bar,
+.app.performance .header {
+    display: none;
+}

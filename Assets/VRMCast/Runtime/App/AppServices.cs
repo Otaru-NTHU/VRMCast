@@ -5,6 +5,8 @@ using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
 using VRMCast.Core.Localization;
 using VRMCast.Diagnostics;
+using VRMCast.Hotkeys;
+using VRMCast.Profiles;
 using VRMCast.Output;
 using VRMCast.Rendering;
 using VRMCast.Tracking;
@@ -29,6 +31,8 @@ namespace VRMCast.App
         public CameraCaptureService Camera2D { get; }
         public TrackingCoordinator Tracking { get; }
         public MicrophoneCaptureService Microphone => Tracking.Microphone;
+        public ProfileService Profiles { get; internal set; }
+        public HotkeyService Hotkeys { get; internal set; }
 
         public AppServices(Localizer localizer, IRenderService render, IAvatarService avatars, BackgroundService background,
             AvatarCameraController camera, OutputService outputs, PreviewOutput preview, NullOutput debugOutput,

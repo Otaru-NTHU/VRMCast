@@ -102,6 +102,23 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
 8. **Performance.** Diagnostics: body ≈ 20 fps, face still ≈ 30 fps, render stays at the target.
 
+## Manual QA: MVP-D profiles and usability (PRD 35)
+
+1. **First launch.** A `Default` profile is created under `~/Library/Application Support/VRMCast/Profiles`.
+   Load an avatar, change background, framing and tracking settings, quit, relaunch: everything is restored,
+   including the avatar and calibration.
+2. **Manage.** Header → Manage: New creates an empty profile, Save As / Duplicate / Rename / Delete behave as
+   named; the header dropdown switches profiles and switching saves the previous one first. Turning auto-save
+   off keeps changes in memory until Save.
+3. **Missing file.** Move the avatar file away and relaunch: the profile stays, a red message names the missing
+   path, and Relink VRM opens the file browser.
+4. **Hotkeys.** Keys 1–4 toggle happy / angry / sad / surprised (where the model defines them), 5 plays neutral
+   once. Click a key cell, press F6: the row now uses F6; Backspace clears. Typing in the profile name field
+   never triggers expressions. Hotkeys work with tracking off and layer on top of tracking when on.
+5. **Performance mode.** Header button or Tab hides all controls; the overlay shows fps / face / audio / output;
+   the preview keeps rendering and the debug output keeps counting frames. Esc or Tab returns.
+6. **Blink.** Advanced settings → Blink strength: at 1.8 (default) a normal blink closes the avatar's eyes fully.
+
 ## Known gaps in MVP-A
 
 - No native open-file dialog; the in-app browser or a command-line path is used instead.

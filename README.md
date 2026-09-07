@@ -5,11 +5,12 @@ Open-source real-time VRM avatar tracking, motion capture, and virtual camera fo
 VRMCast loads VRM 0.x and VRM 1.0 avatars, will drive them from a webcam / iPhone / microphone, and
 composites the result for OBS at 1920×1080 / 30 fps. Apple Silicon only.
 
-**Current milestone: MVP-C.** The app loads avatars at runtime, frames them with camera presets, composites
+**Current milestone: MVP-D.** The app loads avatars at runtime, frames them with camera presets, composites
 solid / image / chroma / transparent backgrounds into a dedicated 1920×1080 render texture, drives head, eyes,
 blinks and mouth from a webcam through MediaPipe Face Landmarker with calibration and smoothing, adds
-microphone / hybrid lip sync and upper-body motion from Pose Landmarker. Profiles (MVP-D) and the macOS
-virtual camera (MVP-E) follow the sequence in [Docs/PRD.md](Docs/PRD.md).
+microphone / hybrid lip sync and upper-body motion from Pose Landmarker, and keeps everything in per-avatar
+profiles with expression hotkeys and a performance mode. The macOS virtual camera (MVP-E) follows the sequence
+in [Docs/PRD.md](Docs/PRD.md).
 
 ## Stack
 

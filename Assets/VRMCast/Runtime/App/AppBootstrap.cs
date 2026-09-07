@@ -6,10 +6,14 @@ using VRMCast.Avatar;
 using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
 using VRMCast.Core.Backgrounds;
+using VRMCast.Core.Vrm;
 using VRMCast.Core.Camera;
 using VRMCast.Core.Localization;
 using VRMCast.Core.Rendering;
 using VRMCast.Diagnostics;
+using VRMCast.Hotkeys;
+using VRMCast.Profiles;
+using VRMCast.Core.Profiles;
 using VRMCast.Output;
 using VRMCast.Core.Tracking;
 using VRMCast.Rendering;
@@ -47,16 +51,6 @@ namespace VRMCast.App
         [SerializeField] private string _startupVrmPath;
 
         public const string LanguagePrefKey = "vrmcast.language";
-        public const string CameraPrefKey = "vrmcast.camera.device";
-        public const string MirrorPrefKey = "vrmcast.tracking.mirror";
-        public const string TrackingModePrefKey = "vrmcast.tracking.mode";
-        public const string TrackingEnabledPrefKey = "vrmcast.tracking.enabled";
-        public const string MicrophonePrefKey = "vrmcast.microphone.device";
-        public const string LipSyncModePrefKey = "vrmcast.lipsync.mode";
-        public const string LipSyncSensitivityPrefKey = "vrmcast.lipsync.sensitivity";
-        public const string LipSyncGatePrefKey = "vrmcast.lipsync.gate";
-        public const string BodyModePrefKey = "vrmcast.body.mode";
-        public const string CalibrationPrefKey = "vrmcast.tracking.calibration";
 
         private AppServices _services;
         private MainView _view;
@@ -102,54 +96,111 @@ namespace VRMCast.App
             var diagnostics = new DiagnosticsService(render, avatars, background, camera, outputs);
 
             var capture = new CameraCaptureService(this);
-            var savedCamera = PlayerPrefs.GetString(CameraPrefKey, string.Empty);
-            if (!string.IsNullOrEmpty(savedCamera)) capture.Select(savedCamera);
-
-            var trackingSettings = new FaceTrackingSettings
-            {
-                MirrorUser = PlayerPrefs.GetInt(MirrorPrefKey, 1) != 0,
-                Mode = PlayerPrefs.GetInt(TrackingModePrefKey, 0) == 1 ? FaceTrackingMode.Advanced : FaceTrackingMode.Basic,
-            };
-            var lipSync = new LipSyncSettings
-            {
-                Mode = (LipSyncMode)Mathf.Clamp(PlayerPrefs.GetInt(LipSyncModePrefKey, (int)LipSyncMode.Hybrid), 0, 2),
-            };
-            lipSync.Audio.Sensitivity = PlayerPrefs.GetFloat(LipSyncSensitivityPrefKey, lipSync.Audio.Sensitivity);
-            lipSync.Audio.GateDb = PlayerPrefs.GetFloat(LipSyncGatePrefKey, lipSync.Audio.GateDb);
-            var body = new BodyTrackingSettings
-            {
-                Mode = PlayerPrefs.GetInt(BodyModePrefKey, (int)BodyTrackingMode.UpperBody) == 0 ? BodyTrackingMode.Off : BodyTrackingMode.UpperBody,
-            };
+            var trackingSettings = new FaceTrackingSettings();
+            var lipSync = new LipSyncSettings();
+            var body = new BodyTrackingSettings();
             var microphone = new MicrophoneCaptureService(this, lipSync.Audio);
-            var savedMic = PlayerPrefs.GetString(MicrophonePrefKey, string.Empty);
-            if (!string.IsNullOrEmpty(savedMic)) microphone.Select(savedMic);
-
-            LoadCalibration(trackingSettings, body);
             var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings, _poseLandmarkerModel, lipSync, body, microphone);
-            tracking.SettingsChanged += () =>
-            {
-                SaveCalibration(tracking.Settings, tracking.Body);
-                PlayerPrefs.SetInt(MirrorPrefKey, tracking.Settings.MirrorUser ? 1 : 0);
-                PlayerPrefs.SetInt(TrackingModePrefKey, tracking.Settings.Mode == FaceTrackingMode.Advanced ? 1 : 0);
-                PlayerPrefs.SetInt(LipSyncModePrefKey, (int)tracking.LipSync.Mode);
-                PlayerPrefs.SetFloat(LipSyncSensitivityPrefKey, tracking.LipSync.Audio.Sensitivity);
-                PlayerPrefs.SetFloat(LipSyncGatePrefKey, tracking.LipSync.Audio.GateDb);
-                PlayerPrefs.SetInt(BodyModePrefKey, (int)tracking.Body.Mode);
-                if (!string.IsNullOrEmpty(microphone.SelectedDevice)) PlayerPrefs.SetString(MicrophonePrefKey, microphone.SelectedDevice);
-                PlayerPrefs.Save();
-            };
-            capture.StateChanged += _ =>
-            {
-                if (!string.IsNullOrEmpty(capture.SelectedDevice)) PlayerPrefs.SetString(CameraPrefKey, capture.SelectedDevice);
-            };
-            tracking.EnabledChanged += enabled =>
-            {
-                PlayerPrefs.SetInt(TrackingEnabledPrefKey, enabled ? 1 : 0);
-                PlayerPrefs.Save();
-            };
             diagnostics.AttachTracking(tracking);
 
             _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics, capture, tracking);
+
+            _hotkeys = new HotkeyService();
+            _hotkeys.SetBindings(Core.Hotkeys.HotkeyBinding.Defaults());
+            _services.Hotkeys = _hotkeys;
+
+            _profiles = new ProfileService(Application.persistentDataPath);
+            _profiles.Bind(CaptureProfile, ApplyProfile);
+            _services.Profiles = _profiles;
+
+            // Any settings change marks the profile dirty; auto-save writes after a quiet period.
+            tracking.SettingsChanged += _profiles.MarkDirty;
+            tracking.EnabledChanged += _ => _profiles.MarkDirty();
+            capture.StateChanged += _ => _profiles.MarkDirty();
+            render.SettingsChanged += _ => _profiles.MarkDirty();
+            background.SettingsChanged += _profiles.MarkDirty;
+            camera.StateChanged += _profiles.MarkDirty;
+            avatars.AvatarLoaded += _ => { _hotkeys.ReleaseAll(); _profiles.MarkDirty(); };
+            avatars.AvatarUnloaded += () => { _hotkeys.ReleaseAll(); _profiles.MarkDirty(); };
+            _hotkeys.BindingsChanged += _profiles.MarkDirty;
+        }
+
+        private ProfileService _profiles;
+        private HotkeyService _hotkeys;
+
+        /// <summary>Fills a profile from the live services (PRD 23).</summary>
+        private ProfileData CaptureProfile(ProfileData p)
+        {
+            var t = _services.Tracking;
+            p.vrmPath = _services.Avatars.HasAvatar ? _services.Avatars.Current.Info.FilePath : p.vrmPath;
+            p.vrmVersion = _services.Avatars.HasAvatar ? (int)_services.Avatars.Current.Info.Version : p.vrmVersion;
+            p.cameraDevice = _services.Camera2D.SelectedDevice ?? "";
+            p.microphoneDevice = _services.Microphone.SelectedDevice ?? "";
+            ProfileMapper.CaptureTracking(p, t.Settings, t.Body, t.Enabled);
+            ProfileMapper.CaptureMappings(p, t.Solver.Mapper.Mappings, t.UsesDefaultMappings);
+            ProfileMapper.CaptureLipSync(p, t.LipSync);
+            ProfileMapper.CaptureCamera(p, _services.Camera.State);
+            ProfileMapper.CaptureBackground(p, _services.Background.Settings);
+            ProfileMapper.CaptureOutput(p, _services.Render.Settings);
+            ProfileMapper.CaptureHotkeys(p, _hotkeys.Bindings);
+            return p;
+        }
+
+        /// <summary>Pushes a profile into the live services. A missing VRM or image is reported, never dropped (PRD 23.2).</summary>
+        private void ApplyProfile(ProfileData p)
+        {
+            var t = _services.Tracking;
+            t.SetEnabled(false);
+
+            _services.Render.SetOutputSettings(ProfileMapper.ToOutput(p));
+
+            ProfileMapper.ApplyCamera(p, _services.Camera.State);
+            _services.Camera.Reframe();
+            _services.Camera.NotifyStateChanged();
+
+            var bg = _services.Background;
+            ProfileMapper.ApplyBackground(p, bg.Settings);
+            if (!string.IsNullOrEmpty(bg.Settings.ImagePath) && !bg.TryLoadImage(bg.Settings.ImagePath))
+            {
+                _profiles.MissingImagePath = bg.Settings.ImagePath;
+            }
+            else
+            {
+                _profiles.MissingImagePath = null;
+            }
+            bg.Apply();
+
+            ProfileMapper.ApplyTracking(p, t.Settings, t.Body);
+            t.SetMappings(ProfileMapper.ToMappings(p), p.useDefaultMappings || p.mappings == null || p.mappings.Count == 0);
+            ProfileMapper.ApplyLipSync(p, t.LipSync);
+            if (!string.IsNullOrEmpty(p.cameraDevice)) _services.Camera2D.Select(p.cameraDevice);
+            if (!string.IsNullOrEmpty(p.microphoneDevice)) _services.Microphone.Select(p.microphoneDevice);
+            t.NotifySettingsChanged();
+
+            _hotkeys.SetBindings(ProfileMapper.ToHotkeys(p));
+
+            _profiles.MissingVrmPath = null;
+            if (!string.IsNullOrEmpty(p.vrmPath))
+            {
+                if (System.IO.File.Exists(p.vrmPath))
+                {
+                    if (!_services.Avatars.HasAvatar || _services.Avatars.Current.Info.FilePath != p.vrmPath)
+                    {
+                        _ = _services.Avatars.LoadAsync(p.vrmPath);
+                    }
+                }
+                else
+                {
+                    _profiles.MissingVrmPath = p.vrmPath;
+                    _services.Avatars.Unload();
+                }
+            }
+            else
+            {
+                _services.Avatars.Unload();
+            }
+
+            if (p.trackingEnabled && t.EngineAvailable) t.SetEnabled(true);
         }
 
         private void Start()
@@ -172,22 +223,28 @@ namespace VRMCast.App
             _services.Camera.Reframe();
             _services.Camera.Apply(force: true);
 
+            _profiles.LoadStartupProfile();
+
+            // "open with" / command line wins over the profile's remembered avatar.
             var startupPath = ResolveStartupPath();
             if (!string.IsNullOrEmpty(startupPath))
             {
                 _ = _services.Avatars.LoadAsync(startupPath);
             }
+        }
 
-            if (PlayerPrefs.GetInt(TrackingEnabledPrefKey, 0) != 0 && _services.Tracking.EngineAvailable)
-            {
-                _services.Tracking.SetEnabled(true);
-            }
+        private void OnApplicationQuit()
+        {
+            _profiles?.Flush();
         }
 
         private void Update()
         {
-            // Tracking is applied in Update so UniVRM (LateUpdate) sees this frame's bones and expressions.
+            // Hotkeys first so their weights overlay this frame's tracking; tracking is applied in Update so
+            // UniVRM (LateUpdate) sees this frame's bones and expressions.
+            _services.Tracking.SetExpressionOverrides(_hotkeys.Tick(Time.unscaledDeltaTime));
             _services.Tracking.Tick(Time.unscaledDeltaTime, Time.realtimeSinceStartupAsDouble);
+            _profiles.Tick();
 
             _view?.TickFast();
             if (_services.Diagnostics.Tick(Time.unscaledDeltaTime))
@@ -224,44 +281,6 @@ namespace VRMCast.App
                 return OutputSettings.Default;
             }
         }
-
-        /// <summary>Calibration lives in PlayerPrefs until profiles (MVP-D) take over.</summary>
-        private static void SaveCalibration(FaceTrackingSettings face, BodyTrackingSettings body)
-        {
-            var c = face.Calibration ?? CalibrationData.Identity;
-            var parts = new[]
-            {
-                c.IsCalibrated ? "1" : "0", F(c.PitchRad), F(c.YawRad), F(c.RollRad), F(c.LookX), F(c.LookY), F(c.MouthOpen), F(c.Smile),
-                F(body.NeutralRollRad), F(body.NeutralYawRad), F(body.NeutralPitchRad),
-            };
-            PlayerPrefs.SetString(CalibrationPrefKey, string.Join(";", parts));
-        }
-
-        private static void LoadCalibration(FaceTrackingSettings face, BodyTrackingSettings body)
-        {
-            var raw = PlayerPrefs.GetString(CalibrationPrefKey, string.Empty);
-            if (string.IsNullOrEmpty(raw)) return;
-            var parts = raw.Split(';');
-            if (parts.Length < 11) return;
-            try
-            {
-                var values = new float[parts.Length];
-                for (var i = 1; i < parts.Length; i++) values[i] = float.Parse(parts[i], System.Globalization.CultureInfo.InvariantCulture);
-                if (parts[0] == "1")
-                {
-                    face.Calibration = new CalibrationData(true, values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
-                }
-                body.NeutralRollRad = values[8];
-                body.NeutralYawRad = values[9];
-                body.NeutralPitchRad = values[10];
-            }
-            catch (FormatException)
-            {
-                PlayerPrefs.DeleteKey(CalibrationPrefKey);
-            }
-        }
-
-        private static string F(float v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
 
         private static AppLanguage LoadLanguagePreference()
         {

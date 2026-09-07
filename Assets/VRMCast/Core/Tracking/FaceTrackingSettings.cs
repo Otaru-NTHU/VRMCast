@@ -29,6 +29,9 @@ namespace VRMCast.Core.Tracking
         public float HeadGain { get; set; } = 1.0f;
         public float HeadDeadZoneDeg { get; set; } = 0.8f;
 
+        /// <summary>Extra gain on blink weights; MediaPipe rarely reports a full 1.0, especially with glasses.</summary>
+        public float BlinkGain { get; set; } = 1.8f;
+
         /// <summary>Share of the tracked head rotation applied to each bone (PRD 11, tuned so the chain sums to 1).</summary>
         public float HeadRatio { get; set; } = 0.55f;
         public float NeckRatio { get; set; } = 0.25f;
@@ -62,6 +65,7 @@ namespace VRMCast.Core.Tracking
             LookSmoothing = Clamp01(LookSmoothing);
             HeadGain = Math.Min(Math.Max(HeadGain, 0f), 3f);
             HeadDeadZoneDeg = Math.Min(Math.Max(HeadDeadZoneDeg, 0f), 10f);
+            BlinkGain = Math.Min(Math.Max(BlinkGain, 0.5f), 4f);
             LookGain = Math.Min(Math.Max(LookGain, 0f), 3f);
         }
 

@@ -93,6 +93,9 @@ namespace VRMCast.CameraControl
             MarkChanged();
         }
 
+        /// <summary>Raise StateChanged after the state object was edited externally (profile load).</summary>
+        public void NotifyStateChanged() => MarkChanged();
+
         /// <summary>Recomputes avatar landmarks (after a pose or scale change) and reapplies.</summary>
         public void Reframe()
         {

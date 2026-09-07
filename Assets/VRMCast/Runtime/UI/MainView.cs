@@ -12,6 +12,8 @@ using VRMCast.Core.Localization;
 using VRMCast.Core.Rendering;
 using VRMCast.Core.Tracking;
 using VRMCast.Core.Vrm;
+using VRMCast.Hotkeys;
+using VRMCast.Profiles;
 using VRMCast.Tracking;
 
 namespace VRMCast.UI
@@ -43,8 +45,19 @@ namespace VRMCast.UI
         private readonly FilePickerView _filePicker;
         private readonly PreviewInput _previewInput;
 
-        // Header
+        // Header / profiles / performance mode
         private readonly DropdownField _language;
+        private readonly DropdownField _profileSelect;
+        private readonly Button _profileManage;
+        private readonly Button _performanceMode;
+        private readonly Label _perfOverlay;
+        private readonly VisualElement _app;
+        private ProfileManagerView _profileManager;
+        private HotkeysView _hotkeysView;
+        private List<string> _profileNames = new List<string>();
+        private bool _performance;
+        private readonly Slider _trackBlink;
+        private readonly Label _trackBlinkValue;
 
         // Model
         private readonly Label _modelName;
@@ -148,6 +161,13 @@ namespace VRMCast.UI
             _loc = services.Localizer;
 
             _language = Q<DropdownField>("language");
+            _profileSelect = Q<DropdownField>("profile-select");
+            _profileManage = Q<Button>("profile-manage");
+            _performanceMode = Q<Button>("performance-mode");
+            _perfOverlay = Q<Label>("perf-overlay");
+            _app = Q<VisualElement>("app");
+            _trackBlink = Q<Slider>("track-blink");
+            _trackBlinkValue = Q<Label>("track-blink-value");
 
             _modelName = Q<Label>("model-name");
             _modelStatus = Q<Label>("model-status");
@@ -222,6 +242,10 @@ namespace VRMCast.UI
 
             _filePicker = new FilePickerView(_root, _loc);
             _previewInput = new PreviewInput(_preview, _services.Camera);
+            _profileManager = new ProfileManagerView(_root, _loc, _services.Profiles, () => _loadVrm.Focus());
+            _hotkeysView = new HotkeysView(Q<VisualElement>("hotkey-rows"), Q<Label>("hotkey-hint"), _loc, _services.Hotkeys, _services.Avatars);
+            _services.Hotkeys.SetTextInputGuard(() => HotkeyService.IsTextFieldFocused(_root) || _filePicker.IsOpen || _profileManager.IsOpen);
+            _root.RegisterCallback<KeyDownEvent>(OnRootKeyDown, TrickleDown.TrickleDown);
 
             BindHeader();
             BindModel();
@@ -250,6 +274,8 @@ namespace VRMCast.UI
             _services.Tracking.EnabledChanged += _ => RefreshTrackingControls();
             _services.Tracking.CalibrationFinished += OnCalibrationFinished;
             _services.Microphone.StateChanged += _ => RefreshLipSyncControls();
+            _services.Profiles.ProfileChanged += OnProfileChanged;
+            _services.Profiles.ProfileListChanged += RefreshProfileControls;
             _loc.LanguageChanged += OnLanguageChanged;
 
             ApplyLanguage();
@@ -301,6 +327,87 @@ namespace VRMCast.UI
                 if (_rebuildingChoices) return;
                 _loc.Language = LanguageOrder[ChoiceIndex(_language, evt.newValue)];
             });
+            _profileSelect.RegisterValueChangedCallback(evt =>
+            {
+                if (_rebuildingChoices) return;
+                var index = ChoiceIndex(_profileSelect, evt.newValue);
+                if (index < 0 || index >= _profileNames.Count) return;
+                var name = _profileNames[index];
+                if (_services.Profiles.Current != null && name == _services.Profiles.Current.name) return;
+                _services.Profiles.Save();
+                _services.Profiles.Load(name);
+            });
+            _profileManage.clicked += () => _profileManager.Show();
+            _performanceMode.clicked += () => SetPerformanceMode(!_performance);
+        }
+
+        private void OnProfileChanged()
+        {
+            RefreshProfileControls();
+            RefreshAll();
+            if (!string.IsNullOrEmpty(_services.Profiles.MissingVrmPath))
+            {
+                ShowMessage(_loc.Format("profile.missingVrm", _services.Profiles.MissingVrmPath), isError: true);
+            }
+        }
+
+        private void RefreshProfileControls()
+        {
+            _profileNames = new List<string>(_services.Profiles.ListNames());
+            var choices = new List<string>(_profileNames);
+            if (choices.Count == 0) choices.Add(_loc["profile.none"]);
+            _rebuildingChoices = true;
+            try
+            {
+                _profileSelect.choices = choices;
+                var current = _services.Profiles.Current?.name;
+                var index = current != null ? _profileNames.IndexOf(current) : -1;
+                _profileSelect.SetValueWithoutNotify(choices[index >= 0 ? index : 0]);
+            }
+            finally
+            {
+                _rebuildingChoices = false;
+            }
+        }
+
+        // ------------------------------------------------------ Performance mode
+
+        /// <summary>PRD 4.3: hide every control, keep rendering and output, show an optional status overlay. Tab toggles.</summary>
+        public void SetPerformanceMode(bool enabled)
+        {
+            if (_performance == enabled) return;
+            _performance = enabled;
+            _app.EnableInClassList("performance", enabled);
+            _perfOverlay.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+            _cameraPreview.image = enabled ? null : _services.Camera2D.Texture;
+            _performanceMode.text = _loc[enabled ? "view.standard" : "view.performance"];
+            if (enabled) ShowMessage(_loc["view.performanceHint"], isError: false);
+        }
+
+        private void OnRootKeyDown(KeyDownEvent evt)
+        {
+            if (HotkeyService.IsTextFieldFocused(_root)) return;
+            if (evt.keyCode == KeyCode.Tab)
+            {
+                SetPerformanceMode(!_performance);
+                evt.StopPropagation();
+            }
+            else if (evt.keyCode == KeyCode.Escape && _performance)
+            {
+                SetPerformanceMode(false);
+                evt.StopPropagation();
+            }
+        }
+
+        private void RefreshPerfOverlay()
+        {
+            if (!_performance) return;
+            var snap = _services.Diagnostics.Snapshot();
+            var tracking = _services.Tracking;
+            var face = _loc[tracking.CurrentStatus == TrackingCoordinator.Status.Tracking ? "status.faceOn" : tracking.Enabled ? "status.faceSearching" : "status.faceOff"];
+            var audio = _loc[!_services.Microphone.IsRunning ? "status.audioOff" : _services.Microphone.Meter.IsOpen ? "status.audioSpeaking" : "status.audioListening"];
+            var output = _loc[_services.DebugOutput.IsRunning ? "status.outputOn" : "status.outputOff"];
+            _perfOverlay.text = $"{snap.RenderFps:0} fps · {face} · {audio} · {output} · Tab";
         }
 
         private void OnLanguageChanged(AppLanguage _)
@@ -328,7 +435,11 @@ namespace VRMCast.UI
             _language.SetValueWithoutNotify(_loc.Language.NativeName());
             _language.label = _loc["header.language"];
             Q<Label>("header-subtitle").text = _loc["header.subtitle"];
-            Q<Label>("header-profile").text = _loc["header.profile"];
+            _profileSelect.label = _loc["header.profile"];
+            _profileManage.text = _loc["profile.manage"];
+            _performanceMode.text = _loc[_performance ? "view.standard" : "view.performance"];
+            Q<Label>("section-hotkeys").text = _loc["section.hotkeys"];
+            _trackBlink.label = _loc["tracking.blinkGain"];
 
             Q<Label>("section-model").text = _loc["section.model"];
             _loadVrm.text = _services.Avatars.IsLoading ? _loc["model.loading"] : _loc["model.load"];
@@ -549,7 +660,7 @@ namespace VRMCast.UI
             }
             _cameraDevice.SetEnabled(_cameraNames.Count > 0);
 
-            _cameraPreview.image = camera.Texture;
+            _cameraPreview.image = _performance ? null : camera.Texture;
             _cameraState.text = _loc[CameraStateKey(camera.CurrentState)];
         }
 
@@ -590,15 +701,23 @@ namespace VRMCast.UI
                 tracking.Settings.ExpressionSmoothing = evt.newValue * 0.8f;
                 tracking.Settings.LookSmoothing = evt.newValue;
                 _trackSmoothingValue.text = $"{evt.newValue:0.00}";
+                tracking.NotifySettingsChanged();
             });
             _trackGain.RegisterValueChangedCallback(evt =>
             {
                 tracking.Settings.HeadGain = evt.newValue;
                 _trackGainValue.text = $"{evt.newValue:0.0}×";
+                tracking.NotifySettingsChanged();
             });
-            _invertPitch.RegisterValueChangedCallback(evt => tracking.Settings.InvertPitch = evt.newValue);
-            _invertYaw.RegisterValueChangedCallback(evt => tracking.Settings.InvertYaw = evt.newValue);
-            _invertRoll.RegisterValueChangedCallback(evt => tracking.Settings.InvertRoll = evt.newValue);
+            _trackBlink.RegisterValueChangedCallback(evt =>
+            {
+                tracking.Settings.BlinkGain = evt.newValue;
+                _trackBlinkValue.text = $"{evt.newValue:0.0}×";
+                tracking.NotifySettingsChanged();
+            });
+            _invertPitch.RegisterValueChangedCallback(evt => { tracking.Settings.InvertPitch = evt.newValue; tracking.NotifySettingsChanged(); });
+            _invertYaw.RegisterValueChangedCallback(evt => { tracking.Settings.InvertYaw = evt.newValue; tracking.NotifySettingsChanged(); });
+            _invertRoll.RegisterValueChangedCallback(evt => { tracking.Settings.InvertRoll = evt.newValue; tracking.NotifySettingsChanged(); });
             Q<Button>("clear-calibration").clicked += () =>
             {
                 tracking.ClearCalibration();
@@ -652,6 +771,8 @@ namespace VRMCast.UI
             _trackSmoothingValue.text = $"{settings.HeadSmoothing:0.00}";
             _trackGain.SetValueWithoutNotify(settings.HeadGain);
             _trackGainValue.text = $"{settings.HeadGain:0.0}×";
+            _trackBlink.SetValueWithoutNotify(settings.BlinkGain);
+            _trackBlinkValue.text = $"{settings.BlinkGain:0.0}×";
             _invertPitch.SetValueWithoutNotify(settings.InvertPitch);
             _invertYaw.SetValueWithoutNotify(settings.InvertYaw);
             _invertRoll.SetValueWithoutNotify(settings.InvertRoll);
@@ -777,6 +898,7 @@ namespace VRMCast.UI
         /// <summary>Per-frame updates that are too fast for the diagnostics window: the microphone level bar and the audio status.</summary>
         public void TickFast()
         {
+            if (_performance) return;
             var mic = _services.Microphone;
             var meter = mic.Meter;
             var running = mic.IsRunning;
@@ -958,6 +1080,7 @@ namespace VRMCast.UI
             _diagTracking.text = _loc.Format("diag.tracking", snap.TrackingFps.ToString("0.0"), snap.InferenceMs.ToString("0"), snap.TrackingDropped);
             _diagPose.text = _loc.Format("diag.pose", snap.PoseFps.ToString("0.0"), snap.PoseInferenceMs.ToString("0"), snap.MicrophoneDb.ToString("0"));
             if (_services.Tracking.CurrentStatus == TrackingCoordinator.Status.Calibrating) RefreshTrackingControls();
+            RefreshPerfOverlay();
         }
 
         // -------------------------------------------------------------- Preview
@@ -1006,6 +1129,11 @@ namespace VRMCast.UI
             _services.Tracking.SettingsChanged -= RefreshLipSyncControls;
             _services.Tracking.CalibrationFinished -= OnCalibrationFinished;
             _loc.LanguageChanged -= OnLanguageChanged;
+            _services.Profiles.ProfileChanged -= OnProfileChanged;
+            _services.Profiles.ProfileListChanged -= RefreshProfileControls;
+            _root.UnregisterCallback<KeyDownEvent>(OnRootKeyDown, TrickleDown.TrickleDown);
+            _profileManager.Dispose();
+            _hotkeysView.Dispose();
             _filePicker.Dispose();
             _previewInput.Dispose();
         }

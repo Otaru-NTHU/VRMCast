@@ -62,6 +62,8 @@ AppBootstrap (MonoBehaviour, composition root, scene-serialized references)
  ├── CameraCaptureService   WebCamTexture device selection, permission, stall recovery
  ├── MicrophoneCaptureService Unity Microphone → AudioLevelMeter (owned by the coordinator)
  ├── TrackingCoordinator    face + pose providers (registries) → MotionSolver / BodyPoseSolver / HybridLipSolver → AvatarDriver
+ ├── HotkeyService          legacy Input → HotkeyState (Hold/Toggle/OneShot) → expression overrides on the driver
+ ├── ProfileService         JSON profiles under persistentDataPath/Profiles; capture/apply via bootstrap callbacks
  └── MainView (UI Toolkit)  binds Main.uxml to the services above; never touches UniVRM
 ```
 
@@ -156,6 +158,26 @@ holds the `AudioLevelMeter`. Tracking engines are optional assemblies that
 register a factory in `FaceTrackingProviderRegistry` at load time; the app never references MediaPipe types,
 so the project builds with or without the package. `LoadedAvatar` gained `TryGetPoseBone` (normalized bones,
 VRM 1.0 control rig), `SetLookAt` and canonical expression names so the driver is version-neutral.
+
+## Profiles and hotkeys (PRD 23, 24)
+
+`VRMCast.Core.Profiles.ProfileData` is the on-disk schema (plain serializable fields, schemaVersion 1) and
+`ProfileMapper` converts to and from the live settings objects; both are pure and unit tested. The runtime
+`ProfileService` stores one JSON file per profile under `Application.persistentDataPath/Profiles`
+(`~/Library/Application Support/VRMCast/Profiles` on macOS), remembers the last profile in PlayerPrefs, and
+auto-saves two seconds after any change (the bootstrap marks the profile dirty from every service event).
+A profile whose avatar or background file is missing is kept and flagged with a relink prompt (PRD 23.2).
+Everything that used to live in PlayerPrefs (camera, microphone, tracking tuning, calibration, lip sync, body
+mode) now lives in the profile; only the language and the last-profile name stay in PlayerPrefs.
+
+Expression hotkeys are a pure `HotkeyState` (Hold / Toggle / OneShot with eased weights) driven by
+`HotkeyService` through the legacy Input API; keys are ignored while a text field or a modal has focus.
+Hotkey weights overlay tracked expressions in `AvatarDriver` (max wins) and keep working with tracking off.
+Global hotkeys while the window is unfocused are deferred (PRD 24).
+
+Performance mode (PRD 4.3) is purely a UI state: the sidebar, header and status bar are hidden, the webcam
+preview stops updating, and a small overlay shows fps / tracking / audio / output. Tab toggles it, Esc leaves it.
+The output texture is unaffected because the UI never renders into it.
 
 ## Reserved interfaces (PRD 15, 19)
 

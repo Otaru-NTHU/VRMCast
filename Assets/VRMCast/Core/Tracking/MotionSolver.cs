@@ -113,7 +113,12 @@ namespace VRMCast.Core.Tracking
             foreach (var kv in weights)
             {
                 var name = s.MirrorUser ? VrmExpressions.Mirror(kv.Key) : kv.Key;
-                _pose.Expressions[name] = kv.Value;
+                var value = kv.Value;
+                if (name == VrmExpressions.BlinkLeft || name == VrmExpressions.BlinkRight || name == VrmExpressions.Blink)
+                {
+                    value = SmoothingMath.Clamp01(value * s.BlinkGain);
+                }
+                _pose.Expressions[name] = value;
             }
             return _pose;
         }

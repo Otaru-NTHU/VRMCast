@@ -5,7 +5,9 @@
             <ui:Label text="VRMCast" class="header-title" />
             <ui:Label name="header-subtitle" text="" class="header-subtitle" />
             <ui:VisualElement class="spacer" />
-            <ui:Label name="header-profile" text="" class="header-profile" />
+            <ui:DropdownField name="profile-select" label="" class="header-profile-select" />
+            <ui:Button name="profile-manage" text="" class="header-button" />
+            <ui:Button name="performance-mode" text="" class="header-button" />
             <ui:DropdownField name="language" label="" class="header-language" />
         </ui:VisualElement>
         <ui:VisualElement name="body" class="body">
@@ -58,6 +60,10 @@
                             <ui:Label name="track-gain-value" text="" class="value-label" />
                         </ui:VisualElement>
                         <ui:VisualElement class="row">
+                            <ui:Slider name="track-blink" label="" low-value="0.5" high-value="4" value="1.8" class="grow" />
+                            <ui:Label name="track-blink-value" text="" class="value-label" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="row">
                             <ui:Toggle name="invert-pitch" label="" />
                             <ui:Toggle name="invert-yaw" label="" />
                             <ui:Toggle name="invert-roll" label="" />
@@ -97,6 +103,12 @@
                     <ui:Label name="section-body" text="" class="section-title" />
                     <ui:DropdownField name="body-mode" label="" />
                     <ui:Label name="body-hint" text="" class="hint" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section">
+                    <ui:Label name="section-hotkeys" text="" class="section-title" />
+                    <ui:VisualElement name="hotkey-rows" />
+                    <ui:Label name="hotkey-hint" text="" class="hint" />
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
@@ -156,6 +168,7 @@
             <ui:VisualElement name="preview-area" class="preview-area">
                 <ui:Image name="preview" class="preview" />
                 <ui:Label name="message-banner" text="" class="message-banner" />
+                <ui:Label name="perf-overlay" text="" class="perf-overlay" />
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="status-bar" class="status-bar">

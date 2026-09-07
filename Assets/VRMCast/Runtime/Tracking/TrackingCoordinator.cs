@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using VRMCast.Audio;
 using VRMCast.Avatar;
@@ -143,7 +144,7 @@ namespace VRMCast.Tracking
         {
             if (Settings.Mode == mode) return;
             Settings.Mode = mode;
-            Solver.SetMappings(ExpressionMappingDefaults.For(mode));
+            if (UsesDefaultMappings) Solver.SetMappings(ExpressionMappingDefaults.For(mode));
             SettingsChanged?.Invoke();
         }
 
@@ -281,6 +282,18 @@ namespace VRMCast.Tracking
         }
 
         public string ProviderUnavailableReasonKey => _provider?.UnavailableReasonKey;
+
+        /// <summary>Expression weights (hotkeys) layered over tracking every frame.</summary>
+        public void SetExpressionOverrides(IReadOnlyDictionary<string, float> overrides) => _driver.SetExpressionOverrides(overrides);
+
+        /// <summary>Replaces the expression mapping table and remembers whether it is the default one.</summary>
+        public void SetMappings(IEnumerable<ExpressionMapping> mappings, bool isDefault)
+        {
+            Solver.SetMappings(mappings);
+            UsesDefaultMappings = isDefault;
+        }
+
+        public bool UsesDefaultMappings { get; private set; } = true;
 
         public void Dispose()
         {
