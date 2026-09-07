@@ -290,11 +290,46 @@ DropdownField > Label, TextField > Label, Slider > Label {
     border-radius: 4px;
 }
 
+#file-picker-list .unity-collection-view__item,
+#file-picker-list .unity-list-view__item {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+#file-picker-list .unity-collection-view__item:hover,
+#file-picker-list .unity-list-view__item:hover {
+    background-color: rgb(58, 58, 66);
+}
+
+#file-picker-list .unity-collection-view__item--selected,
+#file-picker-list .unity-list-view__item--selected,
+#file-picker-list .unity-collection-view__item:checked,
+#file-picker-list .unity-list-view__item:checked {
+    background-color: var(--accent);
+}
+
 .file-entry {
     padding-left: 6px;
     -unity-text-align: middle-left;
+    color: var(--text);
+    font-size: 13px;
 }
 
 .file-entry-dir {
+    color: rgb(150, 190, 255);
     -unity-font-style: bold;
+}
+
+#file-picker-path {
+    margin-bottom: 4px;
+}
+
+#file-picker-path .unity-base-field__input,
+#file-picker-path .unity-text-element {
+    color: var(--text);
+    font-size: 13px;
+}
+
+#file-picker-error {
+    min-height: 16px;
 }

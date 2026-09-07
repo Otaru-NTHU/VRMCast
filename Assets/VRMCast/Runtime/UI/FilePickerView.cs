@@ -65,7 +65,7 @@ namespace VRMCast.UI
             });
             dialog.Add(_pathField);
 
-            _list = new ListView(_entries, 22, MakeItem, BindItem)
+            _list = new ListView(_entries, 26, MakeItem, BindItem)
             {
                 name = "file-picker-list",
                 selectionType = SelectionType.Single,
