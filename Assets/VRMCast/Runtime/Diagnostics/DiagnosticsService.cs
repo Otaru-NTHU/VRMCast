@@ -3,6 +3,7 @@ using VRMCast.Avatar;
 using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
 using VRMCast.Core.Diagnostics;
+using VRMCast.Core.Tracking;
 using VRMCast.Output;
 using VRMCast.Rendering;
 using VRMCast.Tracking;
@@ -40,6 +41,12 @@ namespace VRMCast.Diagnostics
         public DiagnosticsSnapshot Snapshot()
         {
             var avatar = _avatars.HasAvatar ? _avatars.Current.Info : null;
+            float bodyRoll = 0f, bodyYaw = 0f, bodyPitch = 0f;
+            if (_tracking != null && _tracking.LatestPoseFrame.Pose.HasValue)
+            {
+                PoseFrameBuilder.ComputeAngles(_tracking.LatestPoseFrame.Pose.Value, out var r, out var y, out var pch);
+                bodyRoll = r * Mathf.Rad2Deg; bodyYaw = y * Mathf.Rad2Deg; bodyPitch = pch * Mathf.Rad2Deg;
+            }
             return new DiagnosticsSnapshot
             {
                 RenderFps = _fps.Fps,
@@ -67,12 +74,23 @@ namespace VRMCast.Diagnostics
                 PoseInferenceMs = _tracking != null ? _tracking.PoseStats.InferenceMs : 0,
                 HandFps = _tracking != null ? _tracking.HandStats.ResultFps : 0,
                 HandInferenceMs = _tracking != null ? _tracking.HandStats.InferenceMs : 0,
+                HandsState = _tracking != null ? _tracking.HandsStateKey : "off",
+                LeftHandTracked = _tracking != null && _tracking.FingerSolver.Pose.Left.Tracked,
+                RightHandTracked = _tracking != null && _tracking.FingerSolver.Pose.Right.Tracked,
+                LeftHandCurl = _tracking != null ? AverageCurl(_tracking.FingerSolver.Pose.Left) : 0f,
+                RightHandCurl = _tracking != null ? AverageCurl(_tracking.FingerSolver.Pose.Right) : 0f,
+                FingerRigBones = _tracking != null ? _tracking.FingerRigBones : 0,
+                ArmsFromHands = _tracking != null && _tracking.ArmsFromHands,
+                BodyRollDeg = bodyRoll, BodyYawDeg = bodyYaw, BodyPitchDeg = bodyPitch,
+                AppliedBodyRollDeg = _tracking != null ? _tracking.BodySolver.Pose.RollRad * Mathf.Rad2Deg : 0f,
                 LipSyncMode = _tracking != null ? _tracking.LipSync.Mode.ToString() : "-",
                 MicrophoneDevice = _tracking != null && !string.IsNullOrEmpty(_tracking.Microphone.SelectedDevice) ? _tracking.Microphone.SelectedDevice : "(none)",
                 MicrophoneLevel = _tracking != null ? _tracking.Microphone.Meter.Envelope : 0f,
                 MicrophoneDb = _tracking != null ? _tracking.Microphone.Meter.RawDb : -100f,
             };
         }
+
+        private static float AverageCurl(HandPose hand) => (hand.Thumb + hand.Index + hand.Middle + hand.Ring + hand.Little) / 5f;
 
         public string OutputStatusLabel()
         {

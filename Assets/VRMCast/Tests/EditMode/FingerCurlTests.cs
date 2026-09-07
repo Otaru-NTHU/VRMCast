@@ -158,6 +158,19 @@ namespace VRMCast.Core.Tests
         }
 
         [Test]
+        public void FoldedFingerWithFlatDepthStillCurlsByDistance()
+        {
+            // Landmarks whose joint angles read small (depth collapsed) but whose tip sits back near the knuckle.
+            var w = Hand();
+            void Set(int i, float x, float y, float z) { w[i * 3] = x; w[i * 3 + 1] = y; w[i * 3 + 2] = z; }
+            Set(HandFrameBuilder.IndexMcp, 0.09f, 0f, 0.03f);
+            Set(HandFrameBuilder.IndexPip, 0.12f, 0f, 0.03f);
+            Set(HandFrameBuilder.IndexDip, 0.12f, -0.03f, 0.03f);
+            Set(HandFrameBuilder.IndexTip, 0.095f, -0.03f, 0.03f);
+            Assert.That(FingerCurl.Compute(w, Finger.Index), Is.GreaterThan(0.6f));
+        }
+
+        [Test]
         public void BodyModeFlagsFollowTheMode()
         {
             var s = new BodyTrackingSettings { Mode = BodyTrackingMode.UpperBodyArmsFingers };

@@ -16,7 +16,7 @@ namespace VRMCast.Core.Tests
         {
             var face = new FaceTrackingSettings { Mode = FaceTrackingMode.Advanced, MirrorUser = false, HeadSmoothing = 0.2f, HeadGain = 1.5f, BlinkGain = 2.2f, InvertRoll = true };
             face.Calibration = new CalibrationData(true, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
-            var body = new BodyTrackingSettings { Mode = BodyTrackingMode.Off, Smoothing = 0.3f, NeutralYawRad = 0.25f };
+            var body = new BodyTrackingSettings { Mode = BodyTrackingMode.Off, Smoothing = 0.3f, NeutralYawRad = 0.25f, InvertRoll = true };
 
             var hands = new HandTrackingSettings { Smoothing = 0.7f, CurlGain = 1.4f, SwapHands = true };
             var p = new ProfileData();
@@ -41,6 +41,8 @@ namespace VRMCast.Core.Tests
             Assert.That(face2.Calibration.Smile, Is.EqualTo(0.7f));
             Assert.That(body2.Mode, Is.EqualTo(BodyTrackingMode.Off));
             Assert.That(body2.NeutralYawRad, Is.EqualTo(0.25f));
+            Assert.That(body2.InvertRoll, Is.True);
+            Assert.That(body2.InvertYaw, Is.False);
             Assert.That(p.trackingEnabled, Is.True);
         }
 

@@ -197,6 +197,9 @@ namespace VRMCast.Tracking
         private FingerBone[,,] _fingerRig;
         private LoadedAvatar _rigAvatar;
 
+        /// <summary>Finger bones found on the loaded avatar (30 for a complete rig); 0 means fingers cannot move.</summary>
+        public int FingerRigBoneCount { get; private set; }
+
         private static readonly HumanBodyBones[,] LeftFingerBones =
         {
             { HumanBodyBones.LeftThumbProximal, HumanBodyBones.LeftThumbIntermediate, HumanBodyBones.LeftThumbDistal },
@@ -225,10 +228,12 @@ namespace VRMCast.Tracking
         {
             _fingerRig = null;
             _rigAvatar = null;
+            FingerRigBoneCount = 0;
             if (!_avatars.HasAvatar) return;
             var avatar = _avatars.Current;
             var rig = new FingerBone[2, 5, 3];
             var any = false;
+            var count = 0;
             for (var hand = 0; hand < 2; hand++)
             {
                 var bones = hand == 0 ? LeftFingerBones : RightFingerBones;
@@ -272,10 +277,13 @@ namespace VRMCast.Tracking
                             MaxDeg = maxDeg,
                         };
                         any = true;
+                        count++;
                         prev = bone;
                     }
                 }
             }
+            FingerRigBoneCount = count;
+            Debug.Log($"VRMCast: finger rig captured with {count} bones ({avatar.Info.Version})");
             if (!any) return;
             _fingerRig = rig;
             _rigAvatar = avatar;

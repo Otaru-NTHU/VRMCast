@@ -279,7 +279,21 @@ namespace VRMCast.Core.Tracking
             var total = finger == Finger.Thumb
                 ? BendDeg(s1, s2) + BendDeg(s2, s3)               // the thumb's base joint moves sideways, not a curl
                 : BendDeg(s0, s1) + BendDeg(s1, s2) + BendDeg(s2, s3);
-            return SmoothingMath.Clamp01((total - offset) / range);
+            var byAngle = SmoothingMath.Clamp01((total - offset) / range);
+
+            // Depth from a single camera is the weakest landmark axis, so bends toward the camera read shallow. The
+            // tip-to-knuckle distance against the finger's own length shrinks whatever the direction of the bend;
+            // take whichever estimate is larger.
+            var length = s1.Length + s2.Length + s3.Length;
+            var byDistance = 0f;
+            if (length > 1e-4f)
+            {
+                var ratio = (pd - pa).Length / length;                 // 1 straight, about 0.35 for a fist
+                var straight = finger == Finger.Thumb ? 0.97f : 0.95f;
+                var closed = finger == Finger.Thumb ? 0.6f : 0.45f;
+                byDistance = SmoothingMath.Clamp01((straight - ratio) / (straight - closed));
+            }
+            return Math.Max(byAngle, byDistance);
         }
 
         public static HandPose ComputeAll(float[] w, float gain)

@@ -170,6 +170,24 @@ namespace VRMCast.Core.Tests
         }
 
         [Test]
+        public void BodyInvertSwitchesFlipEachAxis()
+        {
+            var settings = new BodyTrackingSettings { Smoothing = 0f, DeadZoneDeg = 0f, InvertRoll = true };
+            var solver = new BodyPoseSolver(settings);
+            var frame = PoseFrameBuilder.Build(0, World(shoulderDy: 0.1f, shoulderDz: 0.1f, lean: 0.1f), null);
+            PoseFrameBuilder.ComputeAngles(frame.Pose.Value, out var r, out var y, out var pch);
+            BodyPose pose = default;
+            for (var i = 0; i < 5; i++) { solver.Submit(frame); pose = solver.Update(1f / 60f, 0.01 * i, mirrorUser: true); }
+            Assert.That(pose.RollRad, Is.EqualTo(r).Within(1e-4f), "inverted roll");
+            Assert.That(pose.YawRad, Is.EqualTo(y).Within(1e-4f), "yaw untouched");
+            Assert.That(pose.PitchRad, Is.EqualTo(pch).Within(1e-4f));
+            settings.InvertYaw = true; settings.InvertPitch = true;
+            pose = solver.Update(1f / 60f, 0.06, mirrorUser: true);
+            Assert.That(pose.YawRad, Is.EqualTo(-y).Within(1e-4f));
+            Assert.That(pose.PitchRad, Is.EqualTo(-pch).Within(1e-4f));
+        }
+
+        [Test]
         public void BodySolverMirrorsClampsAndReturnsToNeutral()
         {
             var settings = new BodyTrackingSettings { Smoothing = 0f, DeadZoneDeg = 0f, LostTimeoutSeconds = 0.2f };

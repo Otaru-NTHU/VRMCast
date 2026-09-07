@@ -111,7 +111,9 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
     yours (palm to camera → palm to viewer). If the wrong side reacts for both arm and fingers, tick "Swap left and
     right (arms and fingers)"; arms and fingers must never disagree with each other. Drop the hands out of frame:
     fingers relax open within half a second and the arms fall back to the pose landmarks, then rest.
-    Diagnostics shows Hands ≈ 15 fps.
+    Diagnostics shows Hands ≈ 15 fps, and the "Fingers:" line under the body mode shows the curl per hand.
+6d. **Body switches.** Lean left: the avatar's torso top goes to screen-left (mirror). If not, "Invert body tilt"
+    fixes it and the setting survives a relaunch; same for turn and lean.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
 8. **Performance.** Diagnostics: body ≈ 20 fps, hands ≈ 15 fps, face still ≈ 30 fps, render stays at the target.
 

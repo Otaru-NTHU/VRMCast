@@ -54,6 +54,28 @@ namespace VRMCast.Tracking
         private TrackingFrame _latestPoseFrame;
         public bool PoseEngineAvailable => PoseTrackingProviderRegistry.HasProviders && _poseModel != null;
         public bool HandEngineAvailable => HandTrackingProviderRegistry.HasProviders && _handModel != null;
+        public bool HandProviderRunning => _handProvider != null && _handProvider.IsRunning;
+        public int FingerRigBones => _driver.FingerRigBoneCount;
+        public TrackingFrame LatestPoseFrame => _latestPoseFrame;
+        public bool ArmsFromHands => ArmSolver.Pose.Left.FromHand || ArmSolver.Pose.Right.FromHand;
+
+        /// <summary>Support text for the hand pipeline: why fingers are (not) moving.</summary>
+        public string HandsStateKey
+        {
+            get
+            {
+                if (!Enabled) return "hands.state.off";
+                if (!Body.HandsEnabled) return "hands.state.modeOff";
+                if (!HandTrackingProviderRegistry.HasProviders) return "hands.state.noEngine";
+                if (_handModel == null) return "hands.state.noModel";
+                if (_handProvider == null || !_handProvider.IsRunning) return "hands.state.starting";
+                if (FingerRigBones == 0) return _avatars.HasAvatar ? "hands.state.noFingerBones" : "hands.state.noAvatar";
+                var l = FingerSolver.Pose.Left.Tracked; var r = FingerSolver.Pose.Right.Tracked;
+                if (l && r) return "hands.state.both";
+                if (l || r) return "hands.state.one";
+                return "hands.state.searching";
+            }
+        }
         public bool Enabled { get; private set; }
         public Status CurrentStatus { get; private set; } = Status.Off;
         public bool EngineAvailable => FaceTrackingProviderRegistry.HasProviders;
@@ -166,6 +188,7 @@ namespace VRMCast.Tracking
                     _handProvider?.Start();
                     HandStats.Reset();
                     _lastHandSequence = 0;
+                    Debug.Log($"VRMCast: hand tracking started ({_handProvider?.Name}), finger rig bones: {_driver.FingerRigBoneCount}");
                 }
                 catch (Exception e)
                 {

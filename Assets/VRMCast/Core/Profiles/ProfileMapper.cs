@@ -35,6 +35,9 @@ namespace VRMCast.Core.Profiles
             body.Mode = (BodyTrackingMode)Clamp(p.bodyMode, 0, 3);
             body.Smoothing = p.body.smoothing;
             body.Gain = p.body.gain;
+            body.InvertRoll = p.body.invertRoll;
+            body.InvertYaw = p.body.invertYaw;
+            body.InvertPitch = p.body.invertPitch;
             body.NeutralRollRad = c.bodyRollRad;
             body.NeutralYawRad = c.bodyYawRad;
             body.NeutralPitchRad = c.bodyPitchRad;
@@ -77,7 +80,7 @@ namespace VRMCast.Core.Profiles
                 lookX = c.LookX, lookY = c.LookY, mouthOpen = c.MouthOpen, smile = c.Smile,
                 bodyRollRad = body.NeutralRollRad, bodyYawRad = body.NeutralYawRad, bodyPitchRad = body.NeutralPitchRad,
             };
-            p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain };
+            p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain, invertRoll = body.InvertRoll, invertYaw = body.InvertYaw, invertPitch = body.InvertPitch };
             if (hands != null) p.hands = new HandTuningData { smoothing = hands.Smoothing, curlGain = hands.CurlGain, swapHands = hands.SwapHands };
         }
 

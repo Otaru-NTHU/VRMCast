@@ -139,12 +139,19 @@ undoes that for both at once.
 **Fingers** (mode "Upper Body + Arms + Fingers", default): `MediaPipeHandProvider` runs the Hand Landmarker
 (`hand_landmarker.bytes`, up to two hands, CPU, 15 fps, 640 px input) and publishes 21 world landmarks plus the
 wrist and palm-knuckle image positions per hand. `FingerCurl` (Core) sums the bend angles at the MCP, PIP and
-DIP joints (thumb: MCP + IP) and maps 25°–195° to a curl of 0..1 (thumb 15°–100°), which does not depend on the
-hand's orientation. `FingerCurlSolver` smooths per hand, assigns hands with the same mirror rule as the arms, and
+DIP joints (thumb: MCP + IP) and maps 25°–195° to a curl of 0..1 (thumb 15°–100°); because single-camera depth
+makes bends toward the camera read shallow, it also measures the tip-to-knuckle distance against the finger's
+length (1 straight, about 0.45 closed) and keeps the larger of the two. Neither depends on the hand's orientation. `FingerCurlSolver` smooths per hand, assigns hands with the same mirror rule as the arms, and
 relaxes a hand to a 0.1 curl 0.4 s after it disappears. `AvatarDriver.OnAvatarLoaded` captures, in the import
 T-pose (palms down), each phalanx's rest rotation and the local axis that swings the finger toward the palm (the
 thumb also toward the little finger); at runtime each of the 15 bones per hand rotates about that axis by
 curl × (70° / 90° / 60°) for fingers and (20° / 40° / 55°) for the thumb. Finger spread is not tracked.
+
+The BODY section has "Invert body tilt / turn / lean" switches (stored in the profile) for a camera or model whose
+torso conventions disagree with the defaults, and a "Fingers:" status line that says at every moment why fingers
+move or not (mode off, model missing, hand model starting, no finger bones on the VRM, no hand seen, or the
+current curl per hand with the finger-bone count). The same facts are in the Copy Diagnostics report
+(`Hands:` and `Body angles:` lines).
 
 `AvatarDriver` applies the torso rotation half to Spine and half to Chest and subtracts it from the head chain,
 because the head angles are camera-relative. Body tracking is on by default (PRD 34 `body_mode: upper_body`, extended

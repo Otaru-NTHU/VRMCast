@@ -102,7 +102,11 @@
                 <ui:VisualElement class="section">
                     <ui:Label name="section-body" text="" class="section-title" />
                     <ui:DropdownField name="body-mode" label="" />
+                    <ui:Label name="hands-state" text="" class="hint" />
                     <ui:Toggle name="hands-swap" label="" value="false" />
+                    <ui:Toggle name="body-invert-roll" label="" value="false" />
+                    <ui:Toggle name="body-invert-yaw" label="" value="false" />
+                    <ui:Toggle name="body-invert-pitch" label="" value="false" />
                     <ui:Label name="body-hint" text="" class="hint" />
                 </ui:VisualElement>
 

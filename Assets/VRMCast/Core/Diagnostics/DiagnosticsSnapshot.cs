@@ -38,6 +38,19 @@ namespace VRMCast.Core.Diagnostics
         public double PoseInferenceMs { get; set; }
         public double HandFps { get; set; }
         public double HandInferenceMs { get; set; }
+        /// <summary>Hand pipeline state for support: mode, provider, what was seen, curl values, rig size.</summary>
+        public string HandsState { get; set; } = "off";
+        public bool LeftHandTracked { get; set; }
+        public bool RightHandTracked { get; set; }
+        public float LeftHandCurl { get; set; }
+        public float RightHandCurl { get; set; }
+        public int FingerRigBones { get; set; }
+        /// <summary>Raw torso angles from the last pose frame (degrees, user frame) and the applied avatar roll.</summary>
+        public float BodyRollDeg { get; set; }
+        public float BodyYawDeg { get; set; }
+        public float BodyPitchDeg { get; set; }
+        public float AppliedBodyRollDeg { get; set; }
+        public bool ArmsFromHands { get; set; }
         public string LipSyncMode { get; set; } = "-";
         public string MicrophoneDevice { get; set; } = "(none)";
         public float MicrophoneLevel { get; set; }
@@ -59,7 +72,8 @@ namespace VRMCast.Core.Diagnostics
             sb.AppendLine($"Tracking: {TrackingStatus} engine={TrackingEngine} fps={TrackingFps.ToString("0.0", ci)} inference={InferenceMs.ToString("0.0", ci)} ms dropped={TrackingDropped} confidence={FaceConfidence.ToString("0.00", ci)}");
             sb.AppendLine($"Camera: {CameraDevice} {CameraResolution}");
             sb.AppendLine($"Pose: fps={PoseFps.ToString("0.0", ci)} inference={PoseInferenceMs.ToString("0.0", ci)} ms");
-            sb.AppendLine($"Hands: fps={HandFps.ToString("0.0", ci)} inference={HandInferenceMs.ToString("0.0", ci)} ms");
+            sb.AppendLine($"Hands: fps={HandFps.ToString("0.0", ci)} inference={HandInferenceMs.ToString("0.0", ci)} ms state={HandsState} left={(LeftHandTracked ? LeftHandCurl.ToString("0.00", ci) : "-")} right={(RightHandTracked ? RightHandCurl.ToString("0.00", ci) : "-")} rigBones={FingerRigBones} armsFromHands={(ArmsFromHands ? "yes" : "no")}");
+            sb.AppendLine($"Body angles: roll={BodyRollDeg.ToString("0.0", ci)} yaw={BodyYawDeg.ToString("0.0", ci)} pitch={BodyPitchDeg.ToString("0.0", ci)} appliedRoll={AppliedBodyRollDeg.ToString("0.0", ci)}");
             sb.AppendLine($"Lip sync: {LipSyncMode} mic={MicrophoneDevice} level={MicrophoneLevel.ToString("0.00", ci)} ({MicrophoneDb.ToString("0", ci)} dBFS)");
             return sb.ToString();
         }

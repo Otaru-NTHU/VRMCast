@@ -108,6 +108,8 @@ namespace VRMCast.UI
         private readonly Label _bodyHint;
         private readonly Toggle _handsSwap;
         private readonly Label _diagHands;
+        private readonly Label _handsState;
+        private readonly Toggle _bodyInvertRoll, _bodyInvertYaw, _bodyInvertPitch;
         private readonly Label _diagPose;
         private readonly Label _statusAudio;
         private static readonly LipSyncMode[] LipSyncOrder = { LipSyncMode.Camera, LipSyncMode.Microphone, LipSyncMode.Hybrid };
@@ -214,6 +216,10 @@ namespace VRMCast.UI
             _bodyHint = Q<Label>("body-hint");
             _handsSwap = Q<Toggle>("hands-swap");
             _diagHands = Q<Label>("diag-hands");
+            _handsState = Q<Label>("hands-state");
+            _bodyInvertRoll = Q<Toggle>("body-invert-roll");
+            _bodyInvertYaw = Q<Toggle>("body-invert-yaw");
+            _bodyInvertPitch = Q<Toggle>("body-invert-pitch");
             _diagPose = Q<Label>("diag-pose");
             _statusAudio = Q<Label>("status-audio");
 
@@ -481,6 +487,9 @@ namespace VRMCast.UI
             _bodyMode.label = _loc["body.mode"];
             RebuildChoices(_bodyMode, Localized(BodyKeys));
             _handsSwap.label = _loc["hands.swap"];
+            _bodyInvertRoll.label = _loc["body.invertRoll"];
+            _bodyInvertYaw.label = _loc["body.invertYaw"];
+            _bodyInvertPitch.label = _loc["body.invertPitch"];
 
             Q<Label>("section-framing").text = _loc["section.framing"];
             _framingPreset.label = _loc["framing.preset"];
@@ -701,6 +710,9 @@ namespace VRMCast.UI
             });
             _mirrorUser.RegisterValueChangedCallback(evt => { tracking.Settings.MirrorUser = evt.newValue; tracking.NotifySettingsChanged(); });
             _handsSwap.RegisterValueChangedCallback(evt => { tracking.Hands.SwapHands = evt.newValue; tracking.NotifySettingsChanged(); });
+            _bodyInvertRoll.RegisterValueChangedCallback(evt => { tracking.Body.InvertRoll = evt.newValue; tracking.NotifySettingsChanged(); });
+            _bodyInvertYaw.RegisterValueChangedCallback(evt => { tracking.Body.InvertYaw = evt.newValue; tracking.NotifySettingsChanged(); });
+            _bodyInvertPitch.RegisterValueChangedCallback(evt => { tracking.Body.InvertPitch = evt.newValue; tracking.NotifySettingsChanged(); });
             _trackSmoothing.RegisterValueChangedCallback(evt =>
             {
                 tracking.Settings.HeadSmoothing = evt.newValue;
@@ -881,6 +893,27 @@ namespace VRMCast.UI
             _bodyHint.text = poseOk ? _loc["body.hint"] : _loc["body.noEngine"];
             _handsSwap.SetValueWithoutNotify(tracking.Hands.SwapHands);
             _handsSwap.style.display = tracking.Body.ArmsEnabled && poseOk ? DisplayStyle.Flex : DisplayStyle.None;
+            _bodyInvertRoll.SetValueWithoutNotify(tracking.Body.InvertRoll);
+            _bodyInvertYaw.SetValueWithoutNotify(tracking.Body.InvertYaw);
+            _bodyInvertPitch.SetValueWithoutNotify(tracking.Body.InvertPitch);
+            var bodyOn = tracking.Body.Mode != BodyTrackingMode.Off && poseOk;
+            _bodyInvertRoll.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
+            _bodyInvertYaw.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
+            _bodyInvertPitch.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
+            RefreshHandsState();
+        }
+
+        /// <summary>One line under the body mode telling why fingers move or not (support aid).</summary>
+        private void RefreshHandsState()
+        {
+            var tracking = _services.Tracking;
+            var key = tracking.HandsStateKey;
+            var l = tracking.FingerSolver.Pose.Left;
+            var r = tracking.FingerSolver.Pose.Right;
+            string Curl(HandPose h) => h.Tracked ? ((h.Thumb + h.Index + h.Middle + h.Ring + h.Little) / 5f).ToString("0.00") : "—";
+            _handsState.text = key == "hands.state.both" || key == "hands.state.one" || key == "hands.state.searching"
+                ? _loc.Format(key, tracking.HandStats.ResultFps.ToString("0"), Curl(l), Curl(r), tracking.FingerRigBones)
+                : _loc[key];
         }
 
         private void PositionGateMark()
@@ -1089,6 +1122,7 @@ namespace VRMCast.UI
             _diagTracking.text = _loc.Format("diag.tracking", snap.TrackingFps.ToString("0.0"), snap.InferenceMs.ToString("0"), snap.TrackingDropped);
             _diagPose.text = _loc.Format("diag.pose", snap.PoseFps.ToString("0.0"), snap.PoseInferenceMs.ToString("0"), snap.MicrophoneDb.ToString("0"));
             _diagHands.text = _loc.Format("diag.hands", snap.HandFps.ToString("0.0"), snap.HandInferenceMs.ToString("0"));
+            RefreshHandsState();
             if (_services.Tracking.CurrentStatus == TrackingCoordinator.Status.Calibrating) RefreshTrackingControls();
             RefreshPerfOverlay();
         }

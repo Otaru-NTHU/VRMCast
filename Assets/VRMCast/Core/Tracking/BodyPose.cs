@@ -35,6 +35,11 @@ namespace VRMCast.Core.Tracking
         public float MaxLeanDeg { get; set; } = 20f;
         public float LostTimeoutSeconds { get; set; } = 0.5f;
         public float ReturnToNeutralSeconds { get; set; } = 1.0f;
+
+        /// <summary>Per-axis sign switches for cameras or models whose torso conventions disagree with the defaults.</summary>
+        public bool InvertRoll { get; set; }
+        public bool InvertYaw { get; set; }
+        public bool InvertPitch { get; set; }
         public float MaxSmoothingSeconds { get; set; } = 0.35f;
 
         /// <summary>Neutral torso angles captured by Calibrate (radians, user frame).</summary>
@@ -260,9 +265,9 @@ namespace VRMCast.Core.Tracking
             var pitch = _pitch.Update(tp, dt, tau);
 
             var mirrorSign = mirrorUser ? 1f : -1f;
-            Pose.RollRad = -roll * mirrorSign;
-            Pose.YawRad = yaw * mirrorSign;
-            Pose.PitchRad = pitch;
+            Pose.RollRad = -roll * mirrorSign * (s.InvertRoll ? -1f : 1f);
+            Pose.YawRad = yaw * mirrorSign * (s.InvertYaw ? -1f : 1f);
+            Pose.PitchRad = pitch * (s.InvertPitch ? -1f : 1f);
             Pose.HasBody = bodyRecent;
             return Pose;
         }
