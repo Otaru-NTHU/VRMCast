@@ -110,8 +110,8 @@ namespace VRMCast.UI
         private readonly Label _statusAudio;
         private static readonly LipSyncMode[] LipSyncOrder = { LipSyncMode.Camera, LipSyncMode.Microphone, LipSyncMode.Hybrid };
         private static readonly string[] LipSyncKeys = { "lipsync.camera", "lipsync.microphone", "lipsync.hybrid" };
-        private static readonly BodyTrackingMode[] BodyOrder = { BodyTrackingMode.Off, BodyTrackingMode.UpperBody };
-        private static readonly string[] BodyKeys = { "body.off", "body.upper" };
+        private static readonly BodyTrackingMode[] BodyOrder = { BodyTrackingMode.Off, BodyTrackingMode.UpperBody, BodyTrackingMode.UpperBodyArms };
+        private static readonly string[] BodyKeys = { "body.off", "body.upper", "body.upperArms" };
         private List<string> _micNames = new List<string>();
 
         // Framing

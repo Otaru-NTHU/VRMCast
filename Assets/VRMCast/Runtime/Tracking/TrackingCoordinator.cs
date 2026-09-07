@@ -42,6 +42,8 @@ namespace VRMCast.Tracking
         public LipSyncSettings LipSync { get; }
         public BodyTrackingSettings Body { get; }
         public BodyPoseSolver BodySolver { get; }
+        public ArmPoseSolver ArmSolver { get; }
+        private TrackingFrame _latestPoseFrame;
         public bool PoseEngineAvailable => PoseTrackingProviderRegistry.HasProviders && _poseModel != null;
         public bool Enabled { get; private set; }
         public Status CurrentStatus { get; private set; } = Status.Off;
@@ -71,7 +73,8 @@ namespace VRMCast.Tracking
             Microphone = microphone ?? new MicrophoneCaptureService(host, LipSync.Audio);
             Solver = new MotionSolver(Settings);
             BodySolver = new BodyPoseSolver(Body);
-            _driver = new AvatarDriver(avatars);
+            ArmSolver = new ArmPoseSolver(Body);
+            _driver = new AvatarDriver(avatars) { ArmRestAngleDeg = Body.ArmRestAngleDeg };
 
             Camera.StateChanged += _ => RefreshStatus();
             Microphone.StateChanged += _ => SettingsChanged?.Invoke();
@@ -127,6 +130,8 @@ namespace VRMCast.Tracking
                 catch (Exception e) { Debug.LogException(e); }
                 _poseProvider = null;
                 BodySolver.Reset();
+                ArmSolver.Reset();
+                _latestPoseFrame = default;
             }
         }
 
@@ -251,6 +256,7 @@ namespace VRMCast.Tracking
                 {
                     _lastPoseSequence = sequence;
                     poseFrame.Timestamp = now;
+                    _latestPoseFrame = poseFrame;
                     BodySolver.Submit(poseFrame);
                 }
             }
@@ -258,7 +264,8 @@ namespace VRMCast.Tracking
             var pose = Solver.Update(dt, now);
             HybridLipSolver.Apply(pose.Expressions, LipSync, pose.Confidence, Microphone.Meter.Envelope, Microphone.Meter.IsOpen, Microphone.IsRunning);
             var body = BodySolver.Update(dt, now, Settings.MirrorUser);
-            _driver.Apply(pose, body);
+            var arms = ArmSolver.Update(_latestPoseFrame, BodySolver.IsTracking, dt, Settings.MirrorUser);
+            _driver.Apply(pose, body, arms);
             RefreshStatus();
         }
 

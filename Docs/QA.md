@@ -99,6 +99,9 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
    follows the same screen side as your head (mirror), and the face does not double-rotate when the whole body
    turns. Set Off: the torso stays still while the head still moves.
 6. **Calibration.** Sit slightly turned and press Calibrate: after it completes the torso reads neutral too.
+6b. **Arms.** Body tracking = Upper Body + Arms, framing Half Body: raise your left hand: the avatar's screen-right
+    arm rises (mirror); wave: the forearm follows; point at the camera: the arm comes toward the viewer. Lower
+    your arms out of frame: the avatar's arms ease back to hanging within a second. Upper Body only: arms stay down.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
 8. **Performance.** Diagnostics: body ≈ 20 fps, face still ≈ 30 fps, render stays at the target.
 

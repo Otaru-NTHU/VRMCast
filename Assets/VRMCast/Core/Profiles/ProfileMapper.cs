@@ -32,7 +32,7 @@ namespace VRMCast.Core.Profiles
                 ? new CalibrationData(true, c.pitchRad, c.yawRad, c.rollRad, c.lookX, c.lookY, c.mouthOpen, c.smile)
                 : CalibrationData.Identity;
 
-            body.Mode = (BodyTrackingMode)Clamp(p.bodyMode, 0, 1);
+            body.Mode = (BodyTrackingMode)Clamp(p.bodyMode, 0, 2);
             body.Smoothing = p.body.smoothing;
             body.Gain = p.body.gain;
             body.NeutralRollRad = c.bodyRollRad;

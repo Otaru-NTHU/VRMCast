@@ -104,6 +104,10 @@ namespace VRMCast.Core.Tests
         public void OutOfRangeEnumsAreClamped()
         {
             var p = new ProfileData { faceMode = 9, bodyMode = -3 };
+            var pArms = new ProfileData { bodyMode = 7 };
+            var bodyArms = new BodyTrackingSettings();
+            ProfileMapper.ApplyTracking(pArms, new FaceTrackingSettings(), bodyArms);
+            Assert.That(bodyArms.Mode, Is.EqualTo(BodyTrackingMode.UpperBodyArms));
             p.background.mode = 42;
             var face = new FaceTrackingSettings();
             var body = new BodyTrackingSettings();

@@ -43,16 +43,26 @@ namespace VRMCast.Avatar
         /// <summary>Eye direction in degrees: yaw positive toward the avatar's right, pitch positive up.</summary>
         public abstract void SetLookAt(float yawDeg, float pitchDeg);
 
-        /// <summary>Writes local rotations for the tracked chain and the resting arm pose. Called every Update by the driver.</summary>
-        public void ApplyPose(Quaternion head, Quaternion neck, Quaternion chest, Quaternion spine, Quaternion leftUpperArm, Quaternion rightUpperArm)
+        /// <summary>Writes local rotations for the tracked head/torso chain. Called every Update by the driver.</summary>
+        public void ApplyPose(Quaternion head, Quaternion neck, Quaternion chest, Quaternion spine)
         {
             SetPoseRotation(HumanBodyBones.Head, head);
             SetPoseRotation(HumanBodyBones.Neck, neck);
             if (!SetPoseRotation(HumanBodyBones.UpperChest, chest)) SetPoseRotation(HumanBodyBones.Chest, chest);
             SetPoseRotation(HumanBodyBones.Spine, spine);
-            SetPoseRotation(HumanBodyBones.LeftUpperArm, leftUpperArm);
-            SetPoseRotation(HumanBodyBones.RightUpperArm, rightUpperArm);
         }
+
+        /// <summary>Writes local rotations for both arms (upper and lower). Hands are left untouched.</summary>
+        public void ApplyArms(Quaternion leftUpper, Quaternion leftLower, Quaternion rightUpper, Quaternion rightLower)
+        {
+            SetPoseRotation(HumanBodyBones.LeftUpperArm, leftUpper);
+            SetPoseRotation(HumanBodyBones.LeftLowerArm, leftLower);
+            SetPoseRotation(HumanBodyBones.RightUpperArm, rightUpper);
+            SetPoseRotation(HumanBodyBones.RightLowerArm, rightLower);
+        }
+
+        /// <summary>True when the chest rotation lands on UpperChest (so the driver knows the parent chain of the arms).</summary>
+        public bool HasUpperChest => TryGetPoseBone(HumanBodyBones.UpperChest, out var t) && t != null;
 
         private bool SetPoseRotation(HumanBodyBones bone, Quaternion rotation)
         {

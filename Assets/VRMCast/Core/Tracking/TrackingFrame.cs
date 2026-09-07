@@ -68,6 +68,10 @@ namespace VRMCast.Core.Tracking
         public float LeftHipX, LeftHipY, LeftHipZ;
         public float RightHipX, RightHipY, RightHipZ;
         public float NoseX, NoseY, NoseZ;
+        public float LeftElbowX, LeftElbowY, LeftElbowZ, LeftElbowVisibility;
+        public float RightElbowX, RightElbowY, RightElbowZ, RightElbowVisibility;
+        public float LeftWristX, LeftWristY, LeftWristZ, LeftWristVisibility;
+        public float RightWristX, RightWristY, RightWristZ, RightWristVisibility;
         public float Confidence;
     }
 

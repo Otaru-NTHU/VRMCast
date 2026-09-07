@@ -108,6 +108,13 @@ farther = turn toward the user's left), pitch (shoulders closer to the camera th
 `BodyPoseSolver` applies a dead zone, gain, clamps (25° / 35° / 20°), smoothing and the same mirror rule as the
 head, and glides to neutral when the body is lost. Calibrate also captures the neutral torso (median window).
 
+**Arms** (mode "Upper Body + Arms", default): `ArmPoseSolver` (Core) turns shoulder → elbow and elbow → wrist
+world vectors into avatar-space directions (mirror: user's left arm drives the avatar's left arm as in a
+mirror; non-mirror swaps arms), eases them with their own smoothing, and returns an arm to the 70° rest pose
+when its elbow visibility drops below 0.55 (a hidden wrist keeps the arm straight). `AvatarDriver` converts the
+directions into local bone rotations with `FromToRotation` under the spine/chest chain, so the arms follow the
+torso. Hands and fingers stay neutral until a hand-tracking milestone (PRD 15).
+
 `AvatarDriver` applies the torso rotation half to Spine and half to Chest and subtracts it from the head chain,
 because the head angles are camera-relative. Body tracking is on by default (PRD 34 `body_mode: upper_body`)
 and can be turned off in the BODY section; without the tracking engine the section is disabled.

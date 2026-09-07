@@ -8,12 +8,23 @@ namespace VRMCast.Core.Tracking
     {
         Off = 0,
         UpperBody = 1,
+        /// <summary>Torso plus upper and lower arms from the pose landmarks (hands stay neutral).</summary>
+        UpperBodyArms = 2,
     }
 
     public sealed class BodyTrackingSettings
     {
-        public BodyTrackingMode Mode { get; set; } = BodyTrackingMode.UpperBody;
+        public BodyTrackingMode Mode { get; set; } = BodyTrackingMode.UpperBodyArms;
         public float Smoothing { get; set; } = 0.6f;
+
+        /// <summary>Arm smoothing (0..1) and the landmark visibility below which an arm returns to rest.</summary>
+        public float ArmSmoothing { get; set; } = 0.45f;
+        public float ArmMinVisibility { get; set; } = 0.55f;
+
+        /// <summary>Degrees the upper arms hang below the T-pose when not tracked.</summary>
+        public float ArmRestAngleDeg { get; set; } = 70f;
+
+        public bool ArmsEnabled => Mode == BodyTrackingMode.UpperBodyArms;
         public float Gain { get; set; } = 1f;
         public float DeadZoneDeg { get; set; } = 1f;
         public float MaxRollDeg { get; set; } = 25f;
@@ -32,6 +43,8 @@ namespace VRMCast.Core.Tracking
         {
             Smoothing = Math.Min(Math.Max(Smoothing, 0f), 1f);
             Gain = Math.Min(Math.Max(Gain, 0f), 3f);
+            ArmSmoothing = Math.Min(Math.Max(ArmSmoothing, 0f), 1f);
+            ArmMinVisibility = Math.Min(Math.Max(ArmMinVisibility, 0f), 1f);
         }
     }
 
@@ -54,6 +67,10 @@ namespace VRMCast.Core.Tracking
         public const int Nose = 0;
         public const int LeftShoulder = 11;
         public const int RightShoulder = 12;
+        public const int LeftElbow = 13;
+        public const int RightElbow = 14;
+        public const int LeftWrist = 15;
+        public const int RightWrist = 16;
         public const int LeftHip = 23;
         public const int RightHip = 24;
         public const int LandmarkCount = 33;
@@ -76,11 +93,20 @@ namespace VRMCast.Core.Tracking
                 LeftHipX = world[LeftHip * 3], LeftHipY = world[LeftHip * 3 + 1], LeftHipZ = world[LeftHip * 3 + 2],
                 RightHipX = world[RightHip * 3], RightHipY = world[RightHip * 3 + 1], RightHipZ = world[RightHip * 3 + 2],
                 NoseX = world[Nose * 3], NoseY = world[Nose * 3 + 1], NoseZ = world[Nose * 3 + 2],
+                LeftElbowX = world[LeftElbow * 3], LeftElbowY = world[LeftElbow * 3 + 1], LeftElbowZ = world[LeftElbow * 3 + 2],
+                RightElbowX = world[RightElbow * 3], RightElbowY = world[RightElbow * 3 + 1], RightElbowZ = world[RightElbow * 3 + 2],
+                LeftWristX = world[LeftWrist * 3], LeftWristY = world[LeftWrist * 3 + 1], LeftWristZ = world[LeftWrist * 3 + 2],
+                RightWristX = world[RightWrist * 3], RightWristY = world[RightWrist * 3 + 1], RightWristZ = world[RightWrist * 3 + 2],
+                LeftElbowVisibility = 1f, RightElbowVisibility = 1f, LeftWristVisibility = 1f, RightWristVisibility = 1f,
             };
             var confidence = 1f;
             if (visibility != null && visibility.Length >= LandmarkCount)
             {
                 confidence = Math.Min(visibility[LeftShoulder], visibility[RightShoulder]);
+                pose.LeftElbowVisibility = visibility[LeftElbow];
+                pose.RightElbowVisibility = visibility[RightElbow];
+                pose.LeftWristVisibility = visibility[LeftWrist];
+                pose.RightWristVisibility = visibility[RightWrist];
             }
             pose.Confidence = confidence;
             frame.Pose = pose;

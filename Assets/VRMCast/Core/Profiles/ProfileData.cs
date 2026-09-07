@@ -27,7 +27,7 @@ namespace VRMCast.Core.Profiles
         public string microphoneDevice = "";
 
         public int faceMode;                // FaceTrackingMode
-        public int bodyMode = 1;            // BodyTrackingMode (UpperBody)
+        public int bodyMode = 2;            // BodyTrackingMode (UpperBodyArms)
         public bool trackingEnabled;
 
         public FaceCalibrationData calibration = new FaceCalibrationData();
