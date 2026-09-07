@@ -168,6 +168,7 @@ MonoBehaviour:
   _backgroundImageMaterial: {fileID: 2100000, guid: f60718293a4b5c6d7e8f900102030506, type: 2}
   _faceLandmarkerModel: {fileID: 4900000, guid: 5838e83559205ed6b9bdd94fa57e9a18, type: 3}
   _poseLandmarkerModel: {fileID: 4900000, guid: 996551d254a950675b263b1862d5273d, type: 3}
+  _handLandmarkerModel: {fileID: 4900000, guid: b467f87f6b5d4d200974b3ca14f53987, type: 3}
   _outputWidth: 1920
   _outputHeight: 1080
   _outputFps: 30

@@ -19,10 +19,11 @@ namespace VRMCast.Core.Tracking
 
     /// <summary>
     /// Turns shoulder / elbow / wrist world landmarks into upper-arm and forearm directions in the avatar's frame.
-    /// Mirror mode (default) drives the avatar's left arm from the user's left arm as a mirror would; non-mirror
-    /// swaps arms so the avatar copies the user. Low-visibility joints ease the arm back to the rest pose
-    /// (hanging <see cref="BodyTrackingSettings.ArmRestAngleDeg"/> below the T-pose). Hands stay neutral: finger
-    /// tracking is a later milestone (PRD 15).
+    /// Mirror mode (default) makes the avatar behave like the user's reflection: the user's left arm, which they see
+    /// on the left of the screen, drives the avatar's right arm (the avatar faces the viewer, so its right side is
+    /// screen-left). Non-mirror mode makes the avatar copy the user: left arm to left arm. Low-visibility joints
+    /// ease the arm back to the rest pose (hanging <see cref="BodyTrackingSettings.ArmRestAngleDeg"/> below the
+    /// T-pose). Fingers are handled by <see cref="FingerCurlSolver"/>.
     /// </summary>
     public sealed class ArmPoseSolver
     {
@@ -53,9 +54,10 @@ namespace VRMCast.Core.Tracking
         /// </summary>
         public static Float3 ToAvatarSpace(Float3 user, bool mirror)
         {
-            // Image-right is the viewer's right, i.e. the avatar's -X; without mirroring the arms are swapped so the
-            // sign flips back.
-            return new Float3(mirror ? -user.X : user.X, -user.Y, -user.Z).Normalized;
+            // The camera image is not mirrored, so image-right is the user's left. A reflection shows the user's
+            // left on screen-left, which is the avatar's +X: keep the sign when mirroring. Copy mode drives the
+            // avatar's own left arm (-X, screen-right) from the user's left, so the sign flips.
+            return new Float3(mirror ? user.X : -user.X, -user.Y, -user.Z).Normalized;
         }
 
         public ArmsPose Update(in TrackingFrame frame, bool bodyRecent, float dt, bool mirrorUser)
@@ -68,7 +70,7 @@ namespace VRMCast.Core.Tracking
             var enabled = s.ArmsEnabled && bodyRecent && frame.Pose != null;
             var p = frame.Pose ?? default;
 
-            // User's left arm feeds the avatar's left arm when mirroring, the avatar's right arm otherwise.
+            // Mirror: the user's left arm feeds the avatar's right arm (same side of the screen). Copy: left to left.
             ComputeArm(p, true, enabled, mirrorUser, out var userLeftUpper, out var userLeftFore, out var userLeftOk);
             ComputeArm(p, false, enabled, mirrorUser, out var userRightUpper, out var userRightFore, out var userRightOk);
 
@@ -76,13 +78,13 @@ namespace VRMCast.Core.Tracking
             bool leftOk, rightOk;
             if (mirrorUser)
             {
-                leftOk = userLeftOk; targetLeftUpper = userLeftUpper; targetLeftFore = userLeftFore;
-                rightOk = userRightOk; targetRightUpper = userRightUpper; targetRightFore = userRightFore;
+                leftOk = userRightOk; targetLeftUpper = userRightUpper; targetLeftFore = userRightFore;
+                rightOk = userLeftOk; targetRightUpper = userLeftUpper; targetRightFore = userLeftFore;
             }
             else
             {
-                leftOk = userRightOk; targetLeftUpper = userRightUpper; targetLeftFore = userRightFore;
-                rightOk = userLeftOk; targetRightUpper = userLeftUpper; targetRightFore = userLeftFore;
+                leftOk = userLeftOk; targetLeftUpper = userLeftUpper; targetLeftFore = userLeftFore;
+                rightOk = userRightOk; targetRightUpper = userRightUpper; targetRightFore = userRightFore;
             }
             if (!leftOk) { targetLeftUpper = restLeft; targetLeftFore = restLeft; }
             if (!rightOk) { targetRightUpper = restRight; targetRightFore = restRight; }

@@ -15,6 +15,13 @@ namespace VRMCast.Tracking
         /// <summary>Degrees the upper arms hang down from the T-pose while idle (mirrors BodyTrackingSettings.ArmRestAngleDeg).</summary>
         public float ArmRestAngleDeg { get; set; } = 70f;
 
+        /// <summary>Finger curl used while hands are not tracked (mirrors HandTrackingSettings.RestCurl).</summary>
+        public float RestCurl { get; set; } = 0.1f;
+
+        /// <summary>Degrees each phalanx bends at curl = 1: proximal, intermediate, distal.</summary>
+        private static readonly Vector3 FingerCurlDeg = new Vector3(70f, 90f, 60f);
+        private static readonly Vector3 ThumbCurlDeg = new Vector3(20f, 40f, 55f);
+
         private static readonly Vector3 LeftArmAxis = Vector3.left;   // normalized T-pose: the avatar's left arm points -X
         private static readonly Vector3 RightArmAxis = Vector3.right;
 
@@ -33,11 +40,14 @@ namespace VRMCast.Tracking
 
         public void Apply(AvatarPose pose) => Apply(pose, default, null);
 
-        public void Apply(AvatarPose pose, BodyPose body) => Apply(pose, body, null);
+        public void Apply(AvatarPose pose, BodyPose body) => Apply(pose, body, null, null);
+
+        public void Apply(AvatarPose pose, BodyPose body, ArmsPose? arms) => Apply(pose, body, arms, null);
 
         /// <param name="body">Torso rotation from pose tracking (zero when body tracking is off).</param>
         /// <param name="arms">Arm directions in avatar space, or null to use the rest pose.</param>
-        public void Apply(AvatarPose pose, BodyPose body, ArmsPose? arms)
+        /// <param name="hands">Finger curl per hand, or null for the relaxed hand.</param>
+        public void Apply(AvatarPose pose, BodyPose body, ArmsPose? arms, HandsPose? hands)
         {
             if (!_avatars.HasAvatar) return;
             var avatar = _avatars.Current;
@@ -61,6 +71,7 @@ namespace VRMCast.Tracking
             var spine = BodyPart(0.5f) * Part(pose.SpineRatio);
             avatar.ApplyPose(head: Part(pose.HeadRatio), neck: Part(pose.NeckRatio), chest: chest, spine: spine);
             ApplyArms(avatar, spine * chest, arms);
+            ApplyFingers(avatar, hands);
 
             avatar.SetLookAt(pose.LookYawDeg, pose.LookPitchDeg);
 
@@ -125,13 +136,133 @@ namespace VRMCast.Tracking
             return vec.sqrMagnitude < 1e-6f ? Vector3.down : vec.normalized;
         }
 
-        /// <summary>Idle pose (arms down, neutral head) used when tracking is off.</summary>
+        // ------------------------------------------------------------- fingers
+
+        private sealed class FingerBone
+        {
+            public Transform Transform;
+            public Quaternion RestLocal;
+            public Vector3 CurlAxisLocal;
+            public float MaxDeg;
+        }
+
+        // [hand 0 = left, 1 = right][finger][segment]
+        private FingerBone[,,] _fingerRig;
+        private LoadedAvatar _rigAvatar;
+
+        private static readonly HumanBodyBones[,] LeftFingerBones =
+        {
+            { HumanBodyBones.LeftThumbProximal, HumanBodyBones.LeftThumbIntermediate, HumanBodyBones.LeftThumbDistal },
+            { HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftIndexIntermediate, HumanBodyBones.LeftIndexDistal },
+            { HumanBodyBones.LeftMiddleProximal, HumanBodyBones.LeftMiddleIntermediate, HumanBodyBones.LeftMiddleDistal },
+            { HumanBodyBones.LeftRingProximal, HumanBodyBones.LeftRingIntermediate, HumanBodyBones.LeftRingDistal },
+            { HumanBodyBones.LeftLittleProximal, HumanBodyBones.LeftLittleIntermediate, HumanBodyBones.LeftLittleDistal },
+        };
+
+        private static readonly HumanBodyBones[,] RightFingerBones =
+        {
+            { HumanBodyBones.RightThumbProximal, HumanBodyBones.RightThumbIntermediate, HumanBodyBones.RightThumbDistal },
+            { HumanBodyBones.RightIndexProximal, HumanBodyBones.RightIndexIntermediate, HumanBodyBones.RightIndexDistal },
+            { HumanBodyBones.RightMiddleProximal, HumanBodyBones.RightMiddleIntermediate, HumanBodyBones.RightMiddleDistal },
+            { HumanBodyBones.RightRingProximal, HumanBodyBones.RightRingIntermediate, HumanBodyBones.RightRingDistal },
+            { HumanBodyBones.RightLittleProximal, HumanBodyBones.RightLittleIntermediate, HumanBodyBones.RightLittleDistal },
+        };
+
+        /// <summary>
+        /// Captures each finger bone's rest rotation and curl axis while the avatar is still in its import T-pose
+        /// (VRM normalizes to a T-pose with the palms facing down). The curl axis is the one that swings the finger
+        /// from its rest direction toward the palm; storing it in bone-local space makes it independent of whatever
+        /// the arm does later. Call right after a load, before any pose is applied.
+        /// </summary>
+        public void OnAvatarLoaded()
+        {
+            _fingerRig = null;
+            _rigAvatar = null;
+            if (!_avatars.HasAvatar) return;
+            var avatar = _avatars.Current;
+            var rig = new FingerBone[2, 5, 3];
+            var any = false;
+            for (var hand = 0; hand < 2; hand++)
+            {
+                var bones = hand == 0 ? LeftFingerBones : RightFingerBones;
+                var handBone = hand == 0 ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand;
+                avatar.TryGetPoseBone(handBone, out var handTransform);
+                avatar.TryGetPoseBone(hand == 0 ? HumanBodyBones.LeftLittleProximal : HumanBodyBones.RightLittleProximal, out var littleProximal);
+                for (var finger = 0; finger < 5; finger++)
+                {
+                    Transform prev = handTransform;
+                    for (var seg = 0; seg < 3; seg++)
+                    {
+                        if (!avatar.TryGetPoseBone(bones[finger, seg], out var bone) || bone == null) { prev = null; continue; }
+                        // Finger direction: toward the next segment, or continuing the previous one for the fingertip bone.
+                        Vector3 dir;
+                        if (seg < 2 && avatar.TryGetPoseBone(bones[finger, seg + 1], out var next) && next != null)
+                            dir = next.position - bone.position;
+                        else if (prev != null)
+                            dir = bone.position - prev.position;
+                        else
+                            dir = hand == 0 ? Vector3.left : Vector3.right;
+                        if (dir.sqrMagnitude < 1e-8f) dir = hand == 0 ? Vector3.left : Vector3.right;
+                        dir.Normalize();
+
+                        // Fingers fold toward the palm (down in the T-pose); the thumb folds across the palm toward the
+                        // little finger as well as down.
+                        var toward = Vector3.down;
+                        if (finger == 0 && littleProximal != null)
+                        {
+                            toward = (Vector3.down + (littleProximal.position - bone.position).normalized).normalized;
+                        }
+                        var axis = Vector3.Cross(dir, toward);
+                        if (axis.sqrMagnitude < 1e-6f) axis = Vector3.Cross(dir, Vector3.forward);
+                        axis.Normalize();
+
+                        var maxDeg = finger == 0 ? ThumbCurlDeg[seg] : FingerCurlDeg[seg];
+                        rig[hand, finger, seg] = new FingerBone
+                        {
+                            Transform = bone,
+                            RestLocal = bone.localRotation,
+                            CurlAxisLocal = Quaternion.Inverse(bone.rotation) * axis,
+                            MaxDeg = maxDeg,
+                        };
+                        any = true;
+                        prev = bone;
+                    }
+                }
+            }
+            if (!any) return;
+            _fingerRig = rig;
+            _rigAvatar = avatar;
+        }
+
+        private void ApplyFingers(LoadedAvatar avatar, HandsPose? hands)
+        {
+            if (_fingerRig == null || !ReferenceEquals(_rigAvatar, avatar)) return;
+            var left = hands?.Left ?? HandPose.Uniform(RestCurl);
+            var right = hands?.Right ?? HandPose.Uniform(RestCurl);
+            for (var hand = 0; hand < 2; hand++)
+            {
+                var pose = hand == 0 ? left : right;
+                for (var finger = 0; finger < 5; finger++)
+                {
+                    var curl = Mathf.Clamp01(pose.Curl((Finger)finger));
+                    for (var seg = 0; seg < 3; seg++)
+                    {
+                        var b = _fingerRig[hand, finger, seg];
+                        if (b == null || b.Transform == null) continue;
+                        b.Transform.localRotation = b.RestLocal * Quaternion.AngleAxis(curl * b.MaxDeg, b.CurlAxisLocal);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Idle pose (arms down, relaxed fingers, neutral head) used when tracking is off.</summary>
         public void ApplyRest()
         {
             if (!_avatars.HasAvatar) return;
             var avatar = _avatars.Current;
             avatar.ApplyPose(Quaternion.identity, Quaternion.identity, Quaternion.identity, Quaternion.identity);
             ApplyArms(avatar, Quaternion.identity, null);
+            ApplyFingers(avatar, null);
             avatar.SetLookAt(0f, 0f);
             // Hotkeys keep working while tracking is off.
             ApplyExpressions(avatar, EmptyExpressions);

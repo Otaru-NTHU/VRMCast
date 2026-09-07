@@ -24,6 +24,7 @@ namespace VRMCast.Editor
         public const string MaterialPath = UiFolder + "/BackgroundImage.mat";
         public const string FaceLandmarkerModelPath = "Packages/com.github.homuler.mediapipe/PackageResources/MediaPipe/face_landmarker_v2_with_blendshapes.bytes";
         public const string PoseLandmarkerModelPath = "Packages/com.github.homuler.mediapipe/PackageResources/MediaPipe/pose_landmarker_lite.bytes";
+        public const string HandLandmarkerModelPath = "Packages/com.github.homuler.mediapipe/PackageResources/MediaPipe/hand_landmarker.bytes";
 
         [MenuItem("VRMCast/Setup/Rebuild Main Scene")]
         public static void RebuildFromMenu()
@@ -64,7 +65,9 @@ namespace VRMCast.Editor
             if (model != null) so.FindProperty("_faceLandmarkerModel").objectReferenceValue = model;
             var poseModel = AssetDatabase.LoadAssetAtPath<TextAsset>(PoseLandmarkerModelPath);
             if (poseModel != null) so.FindProperty("_poseLandmarkerModel").objectReferenceValue = poseModel;
-            else Debug.LogWarning("MainSceneBuilder: MediaPipe package not installed; face tracking model left unassigned. Run Scripts/setup-mediapipe.sh.");
+            var handModel = AssetDatabase.LoadAssetAtPath<TextAsset>(HandLandmarkerModelPath);
+            if (handModel != null) so.FindProperty("_handLandmarkerModel").objectReferenceValue = handModel;
+            if (poseModel == null) Debug.LogWarning("MainSceneBuilder: MediaPipe package not installed; face tracking model left unassigned. Run Scripts/setup-mediapipe.sh.");
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var lightObject = FindOrCreate(scene, "Key Light");

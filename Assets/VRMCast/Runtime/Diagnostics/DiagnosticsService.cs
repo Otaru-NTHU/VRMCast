@@ -65,6 +65,8 @@ namespace VRMCast.Diagnostics
                 CameraResolution = _tracking != null && _tracking.Camera.Texture != null ? $"{_tracking.Camera.Texture.width}x{_tracking.Camera.Texture.height}" : "-",
                 PoseFps = _tracking != null ? _tracking.PoseStats.ResultFps : 0,
                 PoseInferenceMs = _tracking != null ? _tracking.PoseStats.InferenceMs : 0,
+                HandFps = _tracking != null ? _tracking.HandStats.ResultFps : 0,
+                HandInferenceMs = _tracking != null ? _tracking.HandStats.InferenceMs : 0,
                 LipSyncMode = _tracking != null ? _tracking.LipSync.Mode.ToString() : "-",
                 MicrophoneDevice = _tracking != null && !string.IsNullOrEmpty(_tracking.Microphone.SelectedDevice) ? _tracking.Microphone.SelectedDevice : "(none)",
                 MicrophoneLevel = _tracking != null ? _tracking.Microphone.Meter.Envelope : 0f,

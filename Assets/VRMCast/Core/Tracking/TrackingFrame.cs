@@ -75,10 +75,16 @@ namespace VRMCast.Core.Tracking
         public float Confidence;
     }
 
-    /// <summary>Reserved for later hand tracking; intentionally minimal until a provider exists.</summary>
+    /// <summary>
+    /// One hand from the hand landmarker: 21 world landmarks (meters, origin at the hand's geometric center, x right in
+    /// the image, y down, z away from the camera) in MediaPipe order, see <see cref="HandFrameBuilder"/>. Which hand it
+    /// is has already been resolved to the user's own side by the provider.
+    /// </summary>
     public struct HandTracking
     {
+        /// <summary>Handedness score 0..1.</summary>
         public float Confidence;
+        /// <summary>21 × (x, y, z).</summary>
         public float[] LandmarksXyz;
     }
 }

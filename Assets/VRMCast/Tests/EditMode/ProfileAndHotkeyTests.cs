@@ -18,12 +18,17 @@ namespace VRMCast.Core.Tests
             face.Calibration = new CalibrationData(true, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
             var body = new BodyTrackingSettings { Mode = BodyTrackingMode.Off, Smoothing = 0.3f, NeutralYawRad = 0.25f };
 
+            var hands = new HandTrackingSettings { Smoothing = 0.7f, CurlGain = 1.4f, SwapHands = true };
             var p = new ProfileData();
-            ProfileMapper.CaptureTracking(p, face, body, trackingEnabled: true);
+            ProfileMapper.CaptureTracking(p, face, body, trackingEnabled: true, hands);
 
             var face2 = new FaceTrackingSettings();
             var body2 = new BodyTrackingSettings();
-            ProfileMapper.ApplyTracking(p, face2, body2);
+            var hands2 = new HandTrackingSettings();
+            ProfileMapper.ApplyTracking(p, face2, body2, hands2);
+            Assert.That(hands2.Smoothing, Is.EqualTo(0.7f));
+            Assert.That(hands2.CurlGain, Is.EqualTo(1.4f));
+            Assert.That(hands2.SwapHands, Is.True);
 
             Assert.That(face2.Mode, Is.EqualTo(FaceTrackingMode.Advanced));
             Assert.That(face2.MirrorUser, Is.False);
@@ -107,7 +112,7 @@ namespace VRMCast.Core.Tests
             var pArms = new ProfileData { bodyMode = 7 };
             var bodyArms = new BodyTrackingSettings();
             ProfileMapper.ApplyTracking(pArms, new FaceTrackingSettings(), bodyArms);
-            Assert.That(bodyArms.Mode, Is.EqualTo(BodyTrackingMode.UpperBodyArms));
+            Assert.That(bodyArms.Mode, Is.EqualTo(BodyTrackingMode.UpperBodyArmsFingers));
             p.background.mode = 42;
             var face = new FaceTrackingSettings();
             var body = new BodyTrackingSettings();

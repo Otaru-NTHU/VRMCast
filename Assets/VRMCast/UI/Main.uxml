@@ -102,6 +102,7 @@
                 <ui:VisualElement class="section">
                     <ui:Label name="section-body" text="" class="section-title" />
                     <ui:DropdownField name="body-mode" label="" />
+                    <ui:Toggle name="hands-swap" label="" value="false" />
                     <ui:Label name="body-hint" text="" class="hint" />
                 </ui:VisualElement>
 
@@ -161,6 +162,7 @@
                     <ui:Label name="diag-avatar" text="Avatar: (none)" class="diag" />
                     <ui:Label name="diag-tracking" text="" class="diag" />
                     <ui:Label name="diag-pose" text="" class="diag" />
+                    <ui:Label name="diag-hands" text="" class="diag" />
                     <ui:Button name="copy-diagnostics" text="Copy Diagnostics" />
                 </ui:VisualElement>
             </ui:ScrollView>

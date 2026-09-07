@@ -10,6 +10,8 @@ namespace VRMCast.Core.Tracking
         UpperBody = 1,
         /// <summary>Torso plus upper and lower arms from the pose landmarks (hands stay neutral).</summary>
         UpperBodyArms = 2,
+        /// <summary>Arms plus finger curl from the hand landmarks.</summary>
+        UpperBodyArmsFingers = 3,
     }
 
     public sealed class BodyTrackingSettings
@@ -24,7 +26,8 @@ namespace VRMCast.Core.Tracking
         /// <summary>Degrees the upper arms hang below the T-pose when not tracked.</summary>
         public float ArmRestAngleDeg { get; set; } = 70f;
 
-        public bool ArmsEnabled => Mode == BodyTrackingMode.UpperBodyArms;
+        public bool ArmsEnabled => Mode == BodyTrackingMode.UpperBodyArms || Mode == BodyTrackingMode.UpperBodyArmsFingers;
+        public bool HandsEnabled => Mode == BodyTrackingMode.UpperBodyArmsFingers;
         public float Gain { get; set; } = 1f;
         public float DeadZoneDeg { get; set; } = 1f;
         public float MaxRollDeg { get; set; } = 25f;

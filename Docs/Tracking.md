@@ -1,6 +1,6 @@
 # Tracking
 
-Status: MVP-C (face tracking, microphone / hybrid lip sync, upper body). Hands and external providers are not implemented.
+Status: MVP-C+ (face tracking, microphone / hybrid lip sync, upper body, arms, finger curl). External providers are not implemented.
 
 ## Setup
 
@@ -108,18 +108,34 @@ farther = turn toward the user's left), pitch (shoulders closer to the camera th
 `BodyPoseSolver` applies a dead zone, gain, clamps (25° / 35° / 20°), smoothing and the same mirror rule as the
 head, and glides to neutral when the body is lost. Calibrate also captures the neutral torso (median window).
 
-**Arms** (mode "Upper Body + Arms", default): `ArmPoseSolver` (Core) turns shoulder → elbow and elbow → wrist
-world vectors into avatar-space directions (mirror: user's left arm drives the avatar's left arm as in a
-mirror; non-mirror swaps arms), eases them with their own smoothing, and returns an arm to the 70° rest pose
-when its elbow visibility drops below 0.55 (a hidden wrist keeps the arm straight). `AvatarDriver` converts the
-directions into local bone rotations with `FromToRotation` under the spine/chest chain, so the arms follow the
-torso. Hands and fingers stay neutral until a hand-tracking milestone (PRD 15).
+**Arms** (modes "Upper Body + Arms" and "+ Fingers"): `ArmPoseSolver` (Core) turns shoulder → elbow and
+elbow → wrist world vectors into avatar-space directions, eases them with their own smoothing, and returns an
+arm to the 70° rest pose when its elbow visibility drops below 0.55 (a hidden wrist keeps the arm straight).
+Mirror mode makes the avatar the user's reflection: the user's left arm, seen on the left of the screen, drives
+the avatar's *right* arm (the avatar faces the viewer, so its right side is screen-left) and image-right maps
+to the avatar's +X. Copy mode (mirror off) drives left with left and flips the sign. `AvatarDriver` converts
+the directions into local bone rotations with `FromToRotation` under the spine/chest chain, so the arms
+follow the torso.
+
+**Fingers** (mode "Upper Body + Arms + Fingers", default): `MediaPipeHandProvider` runs the Hand Landmarker
+(`hand_landmarker.bytes`, up to two hands, CPU, 15 fps, 640 px input) and publishes 21 world landmarks per
+hand. MediaPipe labels handedness for a mirrored selfie image, and the app feeds the camera unmirrored, so
+`HandFrameBuilder.IsUserLeft` swaps the labels; the BODY section's "Swap left and right hands" toggle flips
+them again for cameras that deliver a mirrored picture. `FingerCurl` (Core) sums the bend angles at the MCP,
+PIP and DIP joints (thumb: MCP + IP) and maps 25°–195° to a curl of 0..1 (thumb 15°–100°), which does not
+depend on the hand's orientation. `FingerCurlSolver` smooths per hand, assigns hands with the same mirror rule
+as the arms, and relaxes a hand to a 0.1 curl 0.4 s after it disappears. `AvatarDriver.OnAvatarLoaded`
+captures, in the import T-pose (palms down), each phalanx's rest rotation and the local axis that swings the
+finger toward the palm (the thumb also toward the little finger); at runtime each of the 15 bones per hand
+rotates about that axis by curl × (70° / 90° / 60°) for fingers and (20° / 40° / 55°) for the thumb. Finger
+spread and wrist rotation are not tracked.
 
 `AvatarDriver` applies the torso rotation half to Spine and half to Chest and subtracts it from the head chain,
-because the head angles are camera-relative. Body tracking is on by default (PRD 34 `body_mode: upper_body`)
-and can be turned off in the BODY section; without the tracking engine the section is disabled.
+because the head angles are camera-relative. Body tracking is on by default (PRD 34 `body_mode: upper_body`, extended
+to arms and fingers) and can be reduced or turned off in the BODY section; without the tracking engine the
+section is disabled.
 
 ## Not in MVP-C
 
-The expression mapping editor UI, vowel classification from audio (A/I/U/E/O), hand tracking, full body,
-external providers (VMC/OSC/ARKit).
+The expression mapping editor UI, vowel classification from audio (A/I/U/E/O), finger spread and wrist
+rotation, full body, external providers (VMC/OSC/ARKit).

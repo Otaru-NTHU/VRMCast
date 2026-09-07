@@ -106,12 +106,14 @@ namespace VRMCast.UI
         private readonly Label _micGateValue;
         private readonly DropdownField _bodyMode;
         private readonly Label _bodyHint;
+        private readonly Toggle _handsSwap;
+        private readonly Label _diagHands;
         private readonly Label _diagPose;
         private readonly Label _statusAudio;
         private static readonly LipSyncMode[] LipSyncOrder = { LipSyncMode.Camera, LipSyncMode.Microphone, LipSyncMode.Hybrid };
         private static readonly string[] LipSyncKeys = { "lipsync.camera", "lipsync.microphone", "lipsync.hybrid" };
-        private static readonly BodyTrackingMode[] BodyOrder = { BodyTrackingMode.Off, BodyTrackingMode.UpperBody, BodyTrackingMode.UpperBodyArms };
-        private static readonly string[] BodyKeys = { "body.off", "body.upper", "body.upperArms" };
+        private static readonly BodyTrackingMode[] BodyOrder = { BodyTrackingMode.Off, BodyTrackingMode.UpperBody, BodyTrackingMode.UpperBodyArms, BodyTrackingMode.UpperBodyArmsFingers };
+        private static readonly string[] BodyKeys = { "body.off", "body.upper", "body.upperArms", "body.upperArmsFingers" };
         private List<string> _micNames = new List<string>();
 
         // Framing
@@ -210,6 +212,8 @@ namespace VRMCast.UI
             _micGateValue = Q<Label>("mic-gate-value");
             _bodyMode = Q<DropdownField>("body-mode");
             _bodyHint = Q<Label>("body-hint");
+            _handsSwap = Q<Toggle>("hands-swap");
+            _diagHands = Q<Label>("diag-hands");
             _diagPose = Q<Label>("diag-pose");
             _statusAudio = Q<Label>("status-audio");
 
@@ -476,6 +480,7 @@ namespace VRMCast.UI
             Q<Label>("section-body").text = _loc["section.body"];
             _bodyMode.label = _loc["body.mode"];
             RebuildChoices(_bodyMode, Localized(BodyKeys));
+            _handsSwap.label = _loc["hands.swap"];
 
             Q<Label>("section-framing").text = _loc["section.framing"];
             _framingPreset.label = _loc["framing.preset"];
@@ -695,6 +700,7 @@ namespace VRMCast.UI
                 tracking.SetMode(TrackingModeOrder[ChoiceIndex(_trackingMode, evt.newValue)]);
             });
             _mirrorUser.RegisterValueChangedCallback(evt => { tracking.Settings.MirrorUser = evt.newValue; tracking.NotifySettingsChanged(); });
+            _handsSwap.RegisterValueChangedCallback(evt => { tracking.Hands.SwapHands = evt.newValue; tracking.NotifySettingsChanged(); });
             _trackSmoothing.RegisterValueChangedCallback(evt =>
             {
                 tracking.Settings.HeadSmoothing = evt.newValue;
@@ -833,6 +839,7 @@ namespace VRMCast.UI
             {
                 if (_rebuildingChoices) return;
                 tracking.SetBodyMode(BodyOrder[ChoiceIndex(_bodyMode, evt.newValue)]);
+                RefreshLipSyncControls();
             });
         }
 
@@ -872,6 +879,8 @@ namespace VRMCast.UI
             var poseOk = tracking.PoseEngineAvailable;
             _bodyMode.SetEnabled(poseOk);
             _bodyHint.text = poseOk ? _loc["body.hint"] : _loc["body.noEngine"];
+            _handsSwap.SetValueWithoutNotify(tracking.Hands.SwapHands);
+            _handsSwap.style.display = tracking.Body.HandsEnabled && tracking.HandEngineAvailable ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void PositionGateMark()
@@ -1079,6 +1088,7 @@ namespace VRMCast.UI
             _statusRenderFps.text = _loc.Format("status.render", snap.RenderFps.ToString("0.0"));
             _diagTracking.text = _loc.Format("diag.tracking", snap.TrackingFps.ToString("0.0"), snap.InferenceMs.ToString("0"), snap.TrackingDropped);
             _diagPose.text = _loc.Format("diag.pose", snap.PoseFps.ToString("0.0"), snap.PoseInferenceMs.ToString("0"), snap.MicrophoneDb.ToString("0"));
+            _diagHands.text = _loc.Format("diag.hands", snap.HandFps.ToString("0.0"), snap.HandInferenceMs.ToString("0"));
             if (_services.Tracking.CurrentStatus == TrackingCoordinator.Status.Calibrating) RefreshTrackingControls();
             RefreshPerfOverlay();
         }

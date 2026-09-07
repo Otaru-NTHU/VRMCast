@@ -37,6 +37,8 @@ namespace VRMCast.App
         [SerializeField] private TextAsset _faceLandmarkerModel;
         [Tooltip("MediaPipe pose_landmarker_lite.bytes from the com.github.homuler.mediapipe package.")]
         [SerializeField] private TextAsset _poseLandmarkerModel;
+        [Tooltip("MediaPipe hand_landmarker.bytes from the com.github.homuler.mediapipe package.")]
+        [SerializeField] private TextAsset _handLandmarkerModel;
 
         [Header("Defaults (PRD 34)")]
         [SerializeField] private int _outputWidth = OutputSettings.DefaultWidth;
@@ -99,8 +101,10 @@ namespace VRMCast.App
             var trackingSettings = new FaceTrackingSettings();
             var lipSync = new LipSyncSettings();
             var body = new BodyTrackingSettings();
+            var hands = new HandTrackingSettings();
             var microphone = new MicrophoneCaptureService(this, lipSync.Audio);
-            var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings, _poseLandmarkerModel, lipSync, body, microphone);
+            var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings, _poseLandmarkerModel, lipSync, body, microphone,
+                _handLandmarkerModel, hands);
             diagnostics.AttachTracking(tracking);
 
             _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics, capture, tracking);
@@ -136,7 +140,7 @@ namespace VRMCast.App
             p.vrmVersion = _services.Avatars.HasAvatar ? (int)_services.Avatars.Current.Info.Version : p.vrmVersion;
             p.cameraDevice = _services.Camera2D.SelectedDevice ?? "";
             p.microphoneDevice = _services.Microphone.SelectedDevice ?? "";
-            ProfileMapper.CaptureTracking(p, t.Settings, t.Body, t.Enabled);
+            ProfileMapper.CaptureTracking(p, t.Settings, t.Body, t.Enabled, t.Hands);
             ProfileMapper.CaptureMappings(p, t.Solver.Mapper.Mappings, t.UsesDefaultMappings);
             ProfileMapper.CaptureLipSync(p, t.LipSync);
             ProfileMapper.CaptureCamera(p, _services.Camera.State);
@@ -170,7 +174,7 @@ namespace VRMCast.App
             }
             bg.Apply();
 
-            ProfileMapper.ApplyTracking(p, t.Settings, t.Body);
+            ProfileMapper.ApplyTracking(p, t.Settings, t.Body, t.Hands);
             t.SetMappings(ProfileMapper.ToMappings(p), p.useDefaultMappings || p.mappings == null || p.mappings.Count == 0);
             ProfileMapper.ApplyLipSync(p, t.LipSync);
             if (!string.IsNullOrEmpty(p.cameraDevice)) _services.Camera2D.Select(p.cameraDevice);

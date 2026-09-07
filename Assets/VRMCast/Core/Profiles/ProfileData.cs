@@ -27,12 +27,13 @@ namespace VRMCast.Core.Profiles
         public string microphoneDevice = "";
 
         public int faceMode;                // FaceTrackingMode
-        public int bodyMode = 2;            // BodyTrackingMode (UpperBodyArms)
+        public int bodyMode = 3;            // BodyTrackingMode (UpperBodyArmsFingers)
         public bool trackingEnabled;
 
         public FaceCalibrationData calibration = new FaceCalibrationData();
         public TrackingTuningData tracking = new TrackingTuningData();
         public BodyTuningData body = new BodyTuningData();
+        public HandTuningData hands = new HandTuningData();
         public List<ExpressionMappingData> mappings = new List<ExpressionMappingData>();
         public bool useDefaultMappings = true;
         public LipSyncData lipSync = new LipSyncData();
@@ -70,6 +71,14 @@ namespace VRMCast.Core.Profiles
     {
         public float smoothing = 0.6f;
         public float gain = 1f;
+    }
+
+    [Serializable]
+    public sealed class HandTuningData
+    {
+        public float smoothing = 0.35f;
+        public float curlGain = 1f;
+        public bool swapHands;
     }
 
     [Serializable]

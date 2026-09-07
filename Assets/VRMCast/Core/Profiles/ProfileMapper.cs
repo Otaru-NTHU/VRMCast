@@ -13,7 +13,7 @@ namespace VRMCast.Core.Profiles
     {
         // ------------------------------------------------------------- tracking
 
-        public static void ApplyTracking(ProfileData p, FaceTrackingSettings face, BodyTrackingSettings body)
+        public static void ApplyTracking(ProfileData p, FaceTrackingSettings face, BodyTrackingSettings body, HandTrackingSettings hands = null)
         {
             face.Mode = (FaceTrackingMode)Clamp(p.faceMode, 0, 1);
             face.MirrorUser = p.tracking.mirrorUser;
@@ -32,7 +32,7 @@ namespace VRMCast.Core.Profiles
                 ? new CalibrationData(true, c.pitchRad, c.yawRad, c.rollRad, c.lookX, c.lookY, c.mouthOpen, c.smile)
                 : CalibrationData.Identity;
 
-            body.Mode = (BodyTrackingMode)Clamp(p.bodyMode, 0, 2);
+            body.Mode = (BodyTrackingMode)Clamp(p.bodyMode, 0, 3);
             body.Smoothing = p.body.smoothing;
             body.Gain = p.body.gain;
             body.NeutralRollRad = c.bodyRollRad;
@@ -40,9 +40,17 @@ namespace VRMCast.Core.Profiles
             body.NeutralPitchRad = c.bodyPitchRad;
             face.Clamp();
             body.Clamp();
+            if (hands != null)
+            {
+                var h = p.hands ?? new HandTuningData();
+                hands.Smoothing = h.smoothing;
+                hands.CurlGain = h.curlGain;
+                hands.SwapHands = h.swapHands;
+                hands.Clamp();
+            }
         }
 
-        public static void CaptureTracking(ProfileData p, FaceTrackingSettings face, BodyTrackingSettings body, bool trackingEnabled)
+        public static void CaptureTracking(ProfileData p, FaceTrackingSettings face, BodyTrackingSettings body, bool trackingEnabled, HandTrackingSettings hands = null)
         {
             p.faceMode = (int)face.Mode;
             p.bodyMode = (int)body.Mode;
@@ -70,6 +78,7 @@ namespace VRMCast.Core.Profiles
                 bodyRollRad = body.NeutralRollRad, bodyYawRad = body.NeutralYawRad, bodyPitchRad = body.NeutralPitchRad,
             };
             p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain };
+            if (hands != null) p.hands = new HandTuningData { smoothing = hands.Smoothing, curlGain = hands.CurlGain, swapHands = hands.SwapHands };
         }
 
         // ------------------------------------------------------------- mappings

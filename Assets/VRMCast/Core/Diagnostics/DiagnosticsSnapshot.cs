@@ -36,6 +36,8 @@ namespace VRMCast.Core.Diagnostics
         public string CameraResolution { get; set; } = "-";
         public double PoseFps { get; set; }
         public double PoseInferenceMs { get; set; }
+        public double HandFps { get; set; }
+        public double HandInferenceMs { get; set; }
         public string LipSyncMode { get; set; } = "-";
         public string MicrophoneDevice { get; set; } = "(none)";
         public float MicrophoneLevel { get; set; }
@@ -57,6 +59,7 @@ namespace VRMCast.Core.Diagnostics
             sb.AppendLine($"Tracking: {TrackingStatus} engine={TrackingEngine} fps={TrackingFps.ToString("0.0", ci)} inference={InferenceMs.ToString("0.0", ci)} ms dropped={TrackingDropped} confidence={FaceConfidence.ToString("0.00", ci)}");
             sb.AppendLine($"Camera: {CameraDevice} {CameraResolution}");
             sb.AppendLine($"Pose: fps={PoseFps.ToString("0.0", ci)} inference={PoseInferenceMs.ToString("0.0", ci)} ms");
+            sb.AppendLine($"Hands: fps={HandFps.ToString("0.0", ci)} inference={HandInferenceMs.ToString("0.0", ci)} ms");
             sb.AppendLine($"Lip sync: {LipSyncMode} mic={MicrophoneDevice} level={MicrophoneLevel.ToString("0.00", ci)} ({MicrophoneDb.ToString("0", ci)} dBFS)");
             return sb.ToString();
         }
