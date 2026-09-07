@@ -41,9 +41,11 @@ whatever the tracker last produced (PRD 3.4). No MediaPipe type crosses into the
 - `TrackingFrame` is in the user's frame: Left/Right blendshapes are the user's own sides; yaw positive is the
   user turning toward their own left; pitch positive looks down; roll positive tilts the top of the head toward
   the image's right; LookX positive looks toward the user's right; LookY positive looks up.
-- Head angles come from the facial transformation matrix (columns 1 and 2 = face up and forward axes in
-  camera space after the plugin's z-flip). If a sign turns out wrong on a machine, Advanced settings expose
-  invert toggles per axis; the defaults were derived analytically and must be confirmed in QA.
+- Head angles come from the facial transformation matrix. The plugin converts MediaPipe's right-handed matrix
+  as S·M·S (z negated on both sides), so column 1 is the face's up axis in Unity camera space but column 2
+  points out of the back of the head; the provider negates it to get the forward axis (verified on device:
+  without the negation yaw sits at ±180° and wraps after calibration). Advanced settings still expose invert
+  toggles per axis.
 - `MotionSolver` converts to the avatar's frame. Mirror mode (default) makes the avatar behave like a mirror:
   user's left eye drives the avatar's right eye, yaw keeps its screen side, roll flips. Non-mirror flips yaw,
   roll and LookX instead.

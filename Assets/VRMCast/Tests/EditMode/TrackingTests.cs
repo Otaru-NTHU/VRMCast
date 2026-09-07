@@ -61,8 +61,8 @@ namespace VRMCast.Core.Tests
             HeadPoseMath.ExtractAngles(0.5f, 0, -0.866f, 0, 1, 0, out _, out var yaw, out _);
             Assert.That(yaw, Is.EqualTo(30f * HeadPoseMath.Deg2Rad).Within(1e-2f));
 
-            // Looking down: with the plugin's converted basis the forward axis gains positive y = positive pitch.
-            HeadPoseMath.ExtractAngles(0, 0.5f, -0.866f, 0, 0.866f, 0.5f, out var pitch, out _, out _);
+            // Forward tilted down (negative y) = positive pitch.
+            HeadPoseMath.ExtractAngles(0, -0.5f, -0.866f, 0, 0.866f, -0.5f, out var pitch, out _, out _);
             Assert.That(pitch, Is.EqualTo(30f * HeadPoseMath.Deg2Rad).Within(1e-2f));
 
             // Up axis leaning toward image +X = clockwise as seen by the camera = positive roll.

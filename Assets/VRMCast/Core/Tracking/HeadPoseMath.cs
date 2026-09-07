@@ -18,9 +18,8 @@ namespace VRMCast.Core.Tracking
             // Facing the camera, forward is (0, 0, -1). Turning toward the user's left moves the nose toward image +X
             // (a non-mirrored image shows the user's left on its right).
             yawRad = (float)Math.Atan2(fx, -fz);
-            // Verified on device: after the plugin's z-flip the forward axis's y grows when the user looks down.
             var horizontal = (float)Math.Sqrt(fx * fx + fz * fz);
-            pitchRad = (float)Math.Atan2(fy, horizontal);
+            pitchRad = (float)Math.Atan2(-fy, horizontal);
 
             // Roll from the up axis projected onto the image plane.
             rollRad = (float)Math.Atan2(ux, uy);

@@ -206,7 +206,9 @@ namespace VRMCast.Tracking.MediaPipe
                 if (result.facialTransformationMatrixes != null && result.facialTransformationMatrixes.Count > 0)
                 {
                     var m = result.facialTransformationMatrixes[0];
-                    var f = m.GetColumn(2);
+                    // The plugin converts the matrix as S·M·S (z flipped on both sides), which leaves column 2
+                    // pointing out of the back of the head; negate it to get the face's forward axis.
+                    var f = -m.GetColumn(2);
                     var u = m.GetColumn(1);
                     var p = m.GetColumn(3);
                     forward = new[] { f.x, f.y, f.z };
