@@ -63,6 +63,12 @@ namespace VRMCast.Diagnostics
                 FaceConfidence = _tracking != null ? _tracking.Solver.Pose.Confidence : 0f,
                 CameraDevice = _tracking != null && !string.IsNullOrEmpty(_tracking.Camera.SelectedDevice) ? _tracking.Camera.SelectedDevice : "(none)",
                 CameraResolution = _tracking != null && _tracking.Camera.Texture != null ? $"{_tracking.Camera.Texture.width}x{_tracking.Camera.Texture.height}" : "-",
+                PoseFps = _tracking != null ? _tracking.PoseStats.ResultFps : 0,
+                PoseInferenceMs = _tracking != null ? _tracking.PoseStats.InferenceMs : 0,
+                LipSyncMode = _tracking != null ? _tracking.LipSync.Mode.ToString() : "-",
+                MicrophoneDevice = _tracking != null && !string.IsNullOrEmpty(_tracking.Microphone.SelectedDevice) ? _tracking.Microphone.SelectedDevice : "(none)",
+                MicrophoneLevel = _tracking != null ? _tracking.Microphone.Meter.Envelope : 0f,
+                MicrophoneDb = _tracking != null ? _tracking.Microphone.Meter.RawDb : -100f,
             };
         }
 

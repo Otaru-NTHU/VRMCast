@@ -1,4 +1,5 @@
 using System;
+using VRMCast.Audio;
 using VRMCast.Avatar;
 using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
@@ -27,6 +28,7 @@ namespace VRMCast.App
         public DiagnosticsService Diagnostics { get; }
         public CameraCaptureService Camera2D { get; }
         public TrackingCoordinator Tracking { get; }
+        public MicrophoneCaptureService Microphone => Tracking.Microphone;
 
         public AppServices(Localizer localizer, IRenderService render, IAvatarService avatars, BackgroundService background,
             AvatarCameraController camera, OutputService outputs, PreviewOutput preview, NullOutput debugOutput,

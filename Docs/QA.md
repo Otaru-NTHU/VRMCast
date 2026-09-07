@@ -84,6 +84,24 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
 9. **Both VRM versions.** Repeat 3–6 with the other VRM version: same behaviour, SpringBone still moves.
 10. **Persistence.** Quit and relaunch: camera choice, mirror, mode and tracking on/off are remembered.
 
+## Manual QA: MVP-C lip sync and upper body (PRD 35)
+
+1. **Microphone.** With tracking on and Lip Sync = Hybrid, macOS asks for microphone permission; the LIP SYNC
+   section lists microphones, the level bar moves when you speak and stays grey (gate closed) when the room is
+   quiet. Raising the noise gate slider above the room level stops the bar from reacting to background noise.
+2. **Camera mode.** Lip Sync = Camera: cover the microphone, open your mouth: the avatar's mouth opens.
+3. **Microphone mode.** Lip Sync = Microphone: cover the camera or turn away, speak: the mouth opens with your
+   voice and closes in pauses; no movement at all in silence.
+4. **Hybrid.** Speak normally: mouth follows both; stay silent with your mouth slightly open: the avatar's mouth
+   stays nearly closed. Make an "oo" shape while humming: the avatar shows ou/oh rather than aa (on models that
+   define them).
+5. **Body.** Body tracking = Upper Body: lean left/right, turn your shoulders, lean toward the camera; the torso
+   follows the same screen side as your head (mirror), and the face does not double-rotate when the whole body
+   turns. Set Off: the torso stays still while the head still moves.
+6. **Calibration.** Sit slightly turned and press Calibrate: after it completes the torso reads neutral too.
+7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
+8. **Performance.** Diagnostics: body ≈ 20 fps, face still ≈ 30 fps, render stays at the target.
+
 ## Known gaps in MVP-A
 
 - No native open-file dialog; the in-app browser or a command-line path is used instead.

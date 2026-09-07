@@ -22,24 +22,34 @@ namespace VRMCast.Tracking
             _avatars = avatars;
         }
 
-        public void Apply(AvatarPose pose)
+        public void Apply(AvatarPose pose) => Apply(pose, default);
+
+        /// <param name="body">Torso rotation from pose tracking (zero when body tracking is off).</param>
+        public void Apply(AvatarPose pose, BodyPose body)
         {
             if (!_avatars.HasAvatar) return;
             var avatar = _avatars.Current;
 
-            var pitch = pose.HeadPitchRad * Mathf.Rad2Deg;
-            var yaw = pose.HeadYawRad * Mathf.Rad2Deg;
-            var roll = pose.HeadRollRad * Mathf.Rad2Deg;
+            var bodyPitch = body.PitchRad * Mathf.Rad2Deg;
+            var bodyYaw = body.YawRad * Mathf.Rad2Deg;
+            var bodyRoll = body.RollRad * Mathf.Rad2Deg;
+
+            // Head angles are camera-relative, so the torso's share is removed from the head chain to avoid double
+            // rotation when the whole upper body turns.
+            var pitch = pose.HeadPitchRad * Mathf.Rad2Deg - bodyPitch;
+            var yaw = pose.HeadYawRad * Mathf.Rad2Deg - bodyYaw;
+            var roll = pose.HeadRollRad * Mathf.Rad2Deg - bodyRoll;
 
             // Normalized space: identity is the T-pose facing +Z, so Euler angles are world-aligned.
             // Positive X pitches the face down, positive Y turns it toward +X (viewer's left), positive Z rolls the top toward -X.
             Quaternion Part(float ratio) => Quaternion.Euler(pitch * ratio, yaw * ratio, roll * ratio);
+            Quaternion BodyPart(float ratio) => Quaternion.Euler(bodyPitch * ratio, bodyYaw * ratio, bodyRoll * ratio);
 
             avatar.ApplyPose(
                 head: Part(pose.HeadRatio),
                 neck: Part(pose.NeckRatio),
-                chest: Part(pose.ChestRatio),
-                spine: Part(pose.SpineRatio),
+                chest: BodyPart(0.5f) * Part(pose.ChestRatio),
+                spine: BodyPart(0.5f) * Part(pose.SpineRatio),
                 leftUpperArm: Quaternion.Euler(0f, 0f, ArmRestAngleDeg),
                 rightUpperArm: Quaternion.Euler(0f, 0f, -ArmRestAngleDeg));
 

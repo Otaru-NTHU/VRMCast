@@ -67,6 +67,39 @@
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
+                    <ui:Label name="section-lipsync" text="" class="section-title" />
+                    <ui:DropdownField name="lipsync-mode" label="" />
+                    <ui:VisualElement name="mic-rows">
+                        <ui:VisualElement class="row">
+                            <ui:DropdownField name="mic-device" label="" class="grow" />
+                            <ui:Button name="mic-refresh" text="↻" class="icon-button" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="row">
+                            <ui:Label name="mic-level-label" text="" class="field-label" />
+                            <ui:VisualElement name="mic-level" class="level-meter grow">
+                                <ui:VisualElement name="mic-level-fill" class="level-meter-fill" />
+                                <ui:VisualElement name="mic-gate-mark" class="level-meter-gate" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label name="mic-state" text="" class="hint" />
+                        <ui:VisualElement class="row">
+                            <ui:Slider name="mic-sensitivity" label="" low-value="0.2" high-value="4" value="1" class="grow" />
+                            <ui:Label name="mic-sensitivity-value" text="" class="value-label" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="row">
+                            <ui:Slider name="mic-gate" label="" low-value="-80" high-value="-20" value="-45" class="grow" />
+                            <ui:Label name="mic-gate-value" text="" class="value-label" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section">
+                    <ui:Label name="section-body" text="" class="section-title" />
+                    <ui:DropdownField name="body-mode" label="" />
+                    <ui:Label name="body-hint" text="" class="hint" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section">
                     <ui:Label name="section-framing" text="" class="section-title" />
                     <ui:DropdownField name="framing-preset" label="Preset" />
                     <ui:VisualElement class="row">
@@ -111,6 +144,7 @@
                     <ui:Label name="diag-output" text="Output: –" class="diag" />
                     <ui:Label name="diag-avatar" text="Avatar: (none)" class="diag" />
                     <ui:Label name="diag-tracking" text="" class="diag" />
+                    <ui:Label name="diag-pose" text="" class="diag" />
                     <ui:Button name="copy-diagnostics" text="Copy Diagnostics" />
                 </ui:VisualElement>
             </ui:ScrollView>

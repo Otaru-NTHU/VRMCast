@@ -220,11 +220,13 @@ namespace VRMCast.Tracking.MediaPipe
             if (_probeFaces > 0)
             {
                 _probeDone = true;
+                MediaPipePoseProvider.FlipVertically = _flipVertically;
                 return;
             }
             if (_probeResults >= FlipProbeResults)
             {
                 _flipVertically = !_flipVertically;
+                MediaPipePoseProvider.FlipVertically = _flipVertically;
                 _probeResults = 0;
                 Debug.Log($"VRMCast tracking: no face in the first frames, trying flipVertically={_flipVertically}.");
             }

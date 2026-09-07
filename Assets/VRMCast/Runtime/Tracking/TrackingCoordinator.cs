@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using VRMCast.Audio;
 using VRMCast.Avatar;
 using VRMCast.Core.Localization;
 using VRMCast.Core.Tracking;
@@ -14,13 +15,18 @@ namespace VRMCast.Tracking
     {
         public const int DefaultTrackingFps = 30;
         public const int DefaultMaxInputWidth = 640;
+        public const int DefaultPoseFps = 20;
+        public const int DefaultPoseInputWidth = 480;
 
         public enum Status { Off, NoEngine, NoModel, Starting, Searching, Tracking, CameraError, Calibrating }
 
         private readonly MonoBehaviour _host;
         private readonly IAvatarService _avatars;
         private readonly TextAsset _model;
+        private readonly TextAsset _poseModel;
         private readonly AvatarDriver _driver;
+        private IUnityPoseTrackingProvider _poseProvider;
+        private long _lastPoseSequence;
         private readonly CalibrationSampler _calibration = new CalibrationSampler();
         private IUnityFaceTrackingProvider _provider;
         private long _lastSequence;
@@ -30,6 +36,12 @@ namespace VRMCast.Tracking
         public FaceTrackingSettings Settings { get; }
         public MotionSolver Solver { get; }
         public TrackingStats Stats { get; } = new TrackingStats();
+        public TrackingStats PoseStats { get; } = new TrackingStats();
+        public MicrophoneCaptureService Microphone { get; }
+        public LipSyncSettings LipSync { get; }
+        public BodyTrackingSettings Body { get; }
+        public BodyPoseSolver BodySolver { get; }
+        public bool PoseEngineAvailable => PoseTrackingProviderRegistry.HasProviders && _poseModel != null;
         public bool Enabled { get; private set; }
         public Status CurrentStatus { get; private set; } = Status.Off;
         public bool EngineAvailable => FaceTrackingProviderRegistry.HasProviders;
@@ -43,18 +55,78 @@ namespace VRMCast.Tracking
         public event Action SettingsChanged;
         public event Action<bool> EnabledChanged;
 
-        public TrackingCoordinator(MonoBehaviour host, IAvatarService avatars, CameraCaptureService camera, TextAsset faceLandmarkerModel, FaceTrackingSettings settings = null)
+        public TrackingCoordinator(MonoBehaviour host, IAvatarService avatars, CameraCaptureService camera, TextAsset faceLandmarkerModel,
+            FaceTrackingSettings settings = null, TextAsset poseLandmarkerModel = null, LipSyncSettings lipSync = null,
+            BodyTrackingSettings body = null, MicrophoneCaptureService microphone = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _avatars = avatars ?? throw new ArgumentNullException(nameof(avatars));
             Camera = camera ?? throw new ArgumentNullException(nameof(camera));
             _model = faceLandmarkerModel;
+            _poseModel = poseLandmarkerModel;
             Settings = settings ?? new FaceTrackingSettings();
+            LipSync = lipSync ?? new LipSyncSettings();
+            Body = body ?? new BodyTrackingSettings();
+            Microphone = microphone ?? new MicrophoneCaptureService(host, LipSync.Audio);
             Solver = new MotionSolver(Settings);
+            BodySolver = new BodyPoseSolver(Body);
             _driver = new AvatarDriver(avatars);
 
             Camera.StateChanged += _ => RefreshStatus();
+            Microphone.StateChanged += _ => SettingsChanged?.Invoke();
             _avatars.AvatarLoaded += _ => _driver.ApplyRest();
+        }
+
+        public void SetLipSyncMode(LipSyncMode mode)
+        {
+            if (LipSync.Mode == mode) return;
+            LipSync.Mode = mode;
+            SyncMicrophone();
+            SettingsChanged?.Invoke();
+        }
+
+        public void SetBodyMode(BodyTrackingMode mode)
+        {
+            if (Body.Mode == mode) return;
+            Body.Mode = mode;
+            SyncPoseProvider();
+            SettingsChanged?.Invoke();
+        }
+
+        /// <summary>The microphone runs only while tracking is on and a mode that uses audio is selected.</summary>
+        private void SyncMicrophone()
+        {
+            var wanted = Enabled && LipSync.Mode != LipSyncMode.Camera;
+            if (wanted && !Microphone.RequestedRunning) Microphone.Start();
+            else if (!wanted && Microphone.RequestedRunning) Microphone.Stop();
+        }
+
+        private void SyncPoseProvider()
+        {
+            var wanted = Enabled && Body.Mode != BodyTrackingMode.Off && PoseEngineAvailable;
+            if (wanted && _poseProvider == null)
+            {
+                try
+                {
+                    _poseProvider = PoseTrackingProviderRegistry.CreateDefault(new PoseProviderContext(Camera, _poseModel, PoseStats, DefaultPoseFps, DefaultPoseInputWidth));
+                    _poseProvider?.Start();
+                    PoseStats.Reset();
+                    _lastPoseSequence = 0;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    _poseProvider?.Dispose();
+                    _poseProvider = null;
+                }
+            }
+            else if (!wanted && _poseProvider != null)
+            {
+                try { _poseProvider.Stop(); _poseProvider.Dispose(); }
+                catch (Exception e) { Debug.LogException(e); }
+                _poseProvider = null;
+                BodySolver.Reset();
+            }
         }
 
         public void SetEnabled(bool enabled)
@@ -82,6 +154,7 @@ namespace VRMCast.Tracking
         {
             if (!Enabled || CurrentStatus == Status.NoEngine) return false;
             _calibration.Start();
+            if (_poseProvider != null) BodySolver.StartCalibration(Time.realtimeSinceStartupAsDouble);
             RefreshStatus();
             return true;
         }
@@ -89,6 +162,7 @@ namespace VRMCast.Tracking
         public void ClearCalibration()
         {
             Settings.Calibration = CalibrationData.Identity;
+            Body.NeutralRollRad = Body.NeutralYawRad = Body.NeutralPitchRad = 0f;
             SettingsChanged?.Invoke();
         }
 
@@ -113,6 +187,8 @@ namespace VRMCast.Tracking
             Stats.Reset();
             _lastSequence = 0;
             Solver.Reset();
+            SyncMicrophone();
+            SyncPoseProvider();
         }
 
         private void StopProvider()
@@ -126,6 +202,8 @@ namespace VRMCast.Tracking
             }
             Camera.Stop();
             Solver.Reset();
+            SyncMicrophone();
+            SyncPoseProvider();
             _driver.ApplyRest();
         }
 
@@ -160,8 +238,22 @@ namespace VRMCast.Tracking
                 }
             }
 
+            Microphone.Tick();
+            _poseProvider?.Tick();
+            if (_poseProvider != null && _poseProvider.TryGetLatest(out var poseFrame) && poseFrame.Timestamp > 0)
+            {
+                var sequence = (long)(poseFrame.Timestamp * 1_000_000);
+                if (sequence != _lastPoseSequence)
+                {
+                    _lastPoseSequence = sequence;
+                    BodySolver.Submit(poseFrame);
+                }
+            }
+
             var pose = Solver.Update(dt, now);
-            _driver.Apply(pose);
+            HybridLipSolver.Apply(pose.Expressions, LipSync, pose.Confidence, Microphone.Meter.Envelope, Microphone.Meter.IsOpen, Microphone.IsRunning);
+            var body = BodySolver.Update(dt, now, Settings.MirrorUser);
+            _driver.Apply(pose, body);
             RefreshStatus();
         }
 
@@ -191,6 +283,7 @@ namespace VRMCast.Tracking
             if (_disposed) return;
             _disposed = true;
             StopProvider();
+            Microphone.Dispose();
         }
     }
 }

@@ -467,3 +467,37 @@ Toggle .unity-toggle__checkmark {
     margin: 0;
     padding: 0;
 }
+
+/* Microphone level meter */
+
+.level-meter {
+    height: 10px;
+    margin: 2px;
+    border-radius: 5px;
+    background-color: var(--bg-field);
+    border-width: 1px;
+    border-color: var(--border);
+    overflow: hidden;
+}
+
+.level-meter-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background-color: var(--ok);
+}
+
+.level-meter-fill.silent {
+    background-color: var(--text-dim);
+}
+
+.level-meter-gate {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    left: 40%;
+    background-color: rgb(240, 190, 90);
+}

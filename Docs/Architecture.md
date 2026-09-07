@@ -60,7 +60,8 @@ AppBootstrap (MonoBehaviour, composition root, scene-serialized references)
  │    └── NullOutput        debug consumer; validates frame size (virtual camera comes in MVP-E)
  ├── DiagnosticsService     render FPS window + snapshot/report
  ├── CameraCaptureService   WebCamTexture device selection, permission, stall recovery
- ├── TrackingCoordinator    provider (from FaceTrackingProviderRegistry) → MotionSolver → AvatarDriver
+ ├── MicrophoneCaptureService Unity Microphone → AudioLevelMeter (owned by the coordinator)
+ ├── TrackingCoordinator    face + pose providers (registries) → MotionSolver / BodyPoseSolver / HybridLipSolver → AvatarDriver
  └── MainView (UI Toolkit)  binds Main.uxml to the services above; never touches UniVRM
 ```
 
@@ -150,14 +151,15 @@ command line (`open -a VRMCast.app --args /path/to/avatar.vrm`). A small NSOpenP
 See Docs/Tracking.md for the pipeline. Architecturally: `VRMCast.Core.Tracking` holds the contract
 (`TrackingFrame`, `ITrackingProvider` family, `LatestFrameBuffer<T>`) and all pure logic (`FaceFrameBuilder`,
 `CalibrationSampler`, `ExpressionMapper`, `MotionSolver`, `TrackingStats`). The runtime adds
-`CameraCaptureService`, `TrackingCoordinator` and `AvatarDriver`. Tracking engines are optional assemblies that
+`CameraCaptureService`, `MicrophoneCaptureService`, `TrackingCoordinator` and `AvatarDriver`; `VRMCast.Core.Audio`
+holds the `AudioLevelMeter`. Tracking engines are optional assemblies that
 register a factory in `FaceTrackingProviderRegistry` at load time; the app never references MediaPipe types,
 so the project builds with or without the package. `LoadedAvatar` gained `TryGetPoseBone` (normalized bones,
 VRM 1.0 control rig), `SetLookAt` and canonical expression names so the driver is version-neutral.
 
 ## Reserved interfaces (PRD 15, 19)
 
-- `IPoseTrackingProvider`, `IHandTrackingProvider`, `IExternalTrackingProvider` exist without implementations.
+- `IHandTrackingProvider` and `IExternalTrackingProvider` exist without implementations; pose has the MediaPipe provider.
 - `VRMCast.Output.IFrameOutput` with `PreviewOutput` and `NullOutput`. `MacVirtualCameraOutput` arrives
   after the Camera Extension spike (Docs/VirtualCamera.md).
 

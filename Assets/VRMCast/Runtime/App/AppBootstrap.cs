@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
+using VRMCast.Audio;
 using VRMCast.Avatar;
 using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
@@ -30,6 +31,8 @@ namespace VRMCast.App
         [SerializeField] private Material _backgroundImageMaterial;
         [Tooltip("MediaPipe face_landmarker_v2_with_blendshapes.bytes from the com.github.homuler.mediapipe package.")]
         [SerializeField] private TextAsset _faceLandmarkerModel;
+        [Tooltip("MediaPipe pose_landmarker_lite.bytes from the com.github.homuler.mediapipe package.")]
+        [SerializeField] private TextAsset _poseLandmarkerModel;
 
         [Header("Defaults (PRD 34)")]
         [SerializeField] private int _outputWidth = OutputSettings.DefaultWidth;
@@ -48,6 +51,11 @@ namespace VRMCast.App
         public const string MirrorPrefKey = "vrmcast.tracking.mirror";
         public const string TrackingModePrefKey = "vrmcast.tracking.mode";
         public const string TrackingEnabledPrefKey = "vrmcast.tracking.enabled";
+        public const string MicrophonePrefKey = "vrmcast.microphone.device";
+        public const string LipSyncModePrefKey = "vrmcast.lipsync.mode";
+        public const string LipSyncSensitivityPrefKey = "vrmcast.lipsync.sensitivity";
+        public const string LipSyncGatePrefKey = "vrmcast.lipsync.gate";
+        public const string BodyModePrefKey = "vrmcast.body.mode";
 
         private AppServices _services;
         private MainView _view;
@@ -101,11 +109,30 @@ namespace VRMCast.App
                 MirrorUser = PlayerPrefs.GetInt(MirrorPrefKey, 1) != 0,
                 Mode = PlayerPrefs.GetInt(TrackingModePrefKey, 0) == 1 ? FaceTrackingMode.Advanced : FaceTrackingMode.Basic,
             };
-            var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings);
+            var lipSync = new LipSyncSettings
+            {
+                Mode = (LipSyncMode)Mathf.Clamp(PlayerPrefs.GetInt(LipSyncModePrefKey, (int)LipSyncMode.Hybrid), 0, 2),
+            };
+            lipSync.Audio.Sensitivity = PlayerPrefs.GetFloat(LipSyncSensitivityPrefKey, lipSync.Audio.Sensitivity);
+            lipSync.Audio.GateDb = PlayerPrefs.GetFloat(LipSyncGatePrefKey, lipSync.Audio.GateDb);
+            var body = new BodyTrackingSettings
+            {
+                Mode = PlayerPrefs.GetInt(BodyModePrefKey, (int)BodyTrackingMode.UpperBody) == 0 ? BodyTrackingMode.Off : BodyTrackingMode.UpperBody,
+            };
+            var microphone = new MicrophoneCaptureService(this, lipSync.Audio);
+            var savedMic = PlayerPrefs.GetString(MicrophonePrefKey, string.Empty);
+            if (!string.IsNullOrEmpty(savedMic)) microphone.Select(savedMic);
+
+            var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings, _poseLandmarkerModel, lipSync, body, microphone);
             tracking.SettingsChanged += () =>
             {
                 PlayerPrefs.SetInt(MirrorPrefKey, tracking.Settings.MirrorUser ? 1 : 0);
                 PlayerPrefs.SetInt(TrackingModePrefKey, tracking.Settings.Mode == FaceTrackingMode.Advanced ? 1 : 0);
+                PlayerPrefs.SetInt(LipSyncModePrefKey, (int)tracking.LipSync.Mode);
+                PlayerPrefs.SetFloat(LipSyncSensitivityPrefKey, tracking.LipSync.Audio.Sensitivity);
+                PlayerPrefs.SetFloat(LipSyncGatePrefKey, tracking.LipSync.Audio.GateDb);
+                PlayerPrefs.SetInt(BodyModePrefKey, (int)tracking.Body.Mode);
+                if (!string.IsNullOrEmpty(microphone.SelectedDevice)) PlayerPrefs.SetString(MicrophonePrefKey, microphone.SelectedDevice);
                 PlayerPrefs.Save();
             };
             capture.StateChanged += _ =>
@@ -159,6 +186,7 @@ namespace VRMCast.App
             // Tracking is applied in Update so UniVRM (LateUpdate) sees this frame's bones and expressions.
             _services.Tracking.Tick(Time.unscaledDeltaTime, Time.realtimeSinceStartupAsDouble);
 
+            _view?.TickFast();
             if (_services.Diagnostics.Tick(Time.unscaledDeltaTime))
             {
                 _view?.RefreshDiagnostics();

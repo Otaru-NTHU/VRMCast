@@ -57,12 +57,18 @@ namespace VRMCast.Core.Tracking
         public float Funnel;
     }
 
-    /// <summary>Reserved for MVP-C upper-body tracking. Positions are normalized to the camera frame.</summary>
+    /// <summary>
+    /// Upper-body landmarks in world space (meters, origin between the hips, x right in the image, y down, z away from
+    /// the camera), as produced by <see cref="PoseFrameBuilder"/>. Left/Right are the user's own sides.
+    /// </summary>
     public struct PoseTracking
     {
         public float LeftShoulderX, LeftShoulderY, LeftShoulderZ;
         public float RightShoulderX, RightShoulderY, RightShoulderZ;
-        public float ChestYawRad, ChestPitchRad, ChestRollRad;
+        public float LeftHipX, LeftHipY, LeftHipZ;
+        public float RightHipX, RightHipY, RightHipZ;
+        public float NoseX, NoseY, NoseZ;
+        public float Confidence;
     }
 
     /// <summary>Reserved for later hand tracking; intentionally minimal until a provider exists.</summary>

@@ -4,6 +4,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VRMCast.App;
+using VRMCast.Audio;
 using VRMCast.Avatar;
 using VRMCast.Core.Backgrounds;
 using VRMCast.Core.Camera;
@@ -78,6 +79,27 @@ namespace VRMCast.UI
         private static readonly FaceTrackingMode[] TrackingModeOrder = { FaceTrackingMode.Basic, FaceTrackingMode.Advanced };
         private static readonly string[] TrackingModeKeys = { "tracking.basic", "tracking.advanced" };
         private List<string> _cameraNames = new List<string>();
+
+        // Lip sync & body
+        private readonly DropdownField _lipSyncMode;
+        private readonly VisualElement _micRows;
+        private readonly DropdownField _micDevice;
+        private readonly VisualElement _micLevelFill;
+        private readonly VisualElement _micGateMark;
+        private readonly Label _micState;
+        private readonly Slider _micSensitivity;
+        private readonly Label _micSensitivityValue;
+        private readonly Slider _micGate;
+        private readonly Label _micGateValue;
+        private readonly DropdownField _bodyMode;
+        private readonly Label _bodyHint;
+        private readonly Label _diagPose;
+        private readonly Label _statusAudio;
+        private static readonly LipSyncMode[] LipSyncOrder = { LipSyncMode.Camera, LipSyncMode.Microphone, LipSyncMode.Hybrid };
+        private static readonly string[] LipSyncKeys = { "lipsync.camera", "lipsync.microphone", "lipsync.hybrid" };
+        private static readonly BodyTrackingMode[] BodyOrder = { BodyTrackingMode.Off, BodyTrackingMode.UpperBody };
+        private static readonly string[] BodyKeys = { "body.off", "body.upper" };
+        private List<string> _micNames = new List<string>();
 
         // Framing
         private readonly DropdownField _framingPreset;
@@ -154,6 +176,21 @@ namespace VRMCast.UI
             _diagTracking = Q<Label>("diag-tracking");
             _statusFace = Q<Label>("status-face");
 
+            _lipSyncMode = Q<DropdownField>("lipsync-mode");
+            _micRows = Q<VisualElement>("mic-rows");
+            _micDevice = Q<DropdownField>("mic-device");
+            _micLevelFill = Q<VisualElement>("mic-level-fill");
+            _micGateMark = Q<VisualElement>("mic-gate-mark");
+            _micState = Q<Label>("mic-state");
+            _micSensitivity = Q<Slider>("mic-sensitivity");
+            _micSensitivityValue = Q<Label>("mic-sensitivity-value");
+            _micGate = Q<Slider>("mic-gate");
+            _micGateValue = Q<Label>("mic-gate-value");
+            _bodyMode = Q<DropdownField>("body-mode");
+            _bodyHint = Q<Label>("body-hint");
+            _diagPose = Q<Label>("diag-pose");
+            _statusAudio = Q<Label>("status-audio");
+
             _framingPreset = Q<DropdownField>("framing-preset");
             _fov = Q<Slider>("fov");
             _fovValue = Q<Label>("fov-value");
@@ -186,6 +223,7 @@ namespace VRMCast.UI
             BindModel();
             BindCamera();
             BindTracking();
+            BindLipSyncAndBody();
             BindFraming();
             BindBackground();
             BindOutput();
@@ -204,8 +242,10 @@ namespace VRMCast.UI
             _services.Camera2D.DevicesChanged += RefreshWebcamControls;
             _services.Tracking.StatusChanged += OnTrackingStatusChanged;
             _services.Tracking.SettingsChanged += RefreshTrackingControls;
+            _services.Tracking.SettingsChanged += RefreshLipSyncControls;
             _services.Tracking.EnabledChanged += _ => RefreshTrackingControls();
             _services.Tracking.CalibrationFinished += OnCalibrationFinished;
+            _services.Microphone.StateChanged += _ => RefreshLipSyncControls();
             _loc.LanguageChanged += OnLanguageChanged;
 
             ApplyLanguage();
@@ -311,6 +351,17 @@ namespace VRMCast.UI
             _invertRoll.label = _loc["tracking.invertRoll"];
             Q<Button>("clear-calibration").text = _loc["tracking.clearCalibration"];
 
+            Q<Label>("section-lipsync").text = _loc["section.lipsync"];
+            _lipSyncMode.label = _loc["lipsync.mode"];
+            RebuildChoices(_lipSyncMode, Localized(LipSyncKeys));
+            _micDevice.label = _loc["lipsync.microphone"];
+            Q<Label>("mic-level-label").text = _loc["lipsync.level"];
+            _micSensitivity.label = _loc["lipsync.sensitivity"];
+            _micGate.label = _loc["lipsync.gate"];
+            Q<Label>("section-body").text = _loc["section.body"];
+            _bodyMode.label = _loc["body.mode"];
+            RebuildChoices(_bodyMode, Localized(BodyKeys));
+
             Q<Label>("section-framing").text = _loc["section.framing"];
             _framingPreset.label = _loc["framing.preset"];
             RebuildChoices(_framingPreset, Localized(FramingKeys));
@@ -336,7 +387,6 @@ namespace VRMCast.UI
             Q<Label>("section-diagnostics").text = _loc["section.diagnostics"];
             Q<Button>("copy-diagnostics").text = _loc["diag.copy"];
 
-            Q<Label>("status-audio").text = _loc["status.audio"];
         }
 
         private static void RebuildChoices(DropdownField field, List<string> choices)
@@ -611,6 +661,123 @@ namespace VRMCast.UI
             }
         }
 
+        // ------------------------------------------------------ Lip sync & body
+
+        private void BindLipSyncAndBody()
+        {
+            var tracking = _services.Tracking;
+            var mic = _services.Microphone;
+            _lipSyncMode.RegisterValueChangedCallback(evt =>
+            {
+                if (_rebuildingChoices) return;
+                tracking.SetLipSyncMode(LipSyncOrder[ChoiceIndex(_lipSyncMode, evt.newValue)]);
+            });
+            _micDevice.RegisterValueChangedCallback(evt =>
+            {
+                if (_rebuildingChoices) return;
+                var index = ChoiceIndex(_micDevice, evt.newValue);
+                if (index >= 0 && index < _micNames.Count) { mic.Select(_micNames[index]); tracking.NotifySettingsChanged(); }
+            });
+            Q<Button>("mic-refresh").clicked += RefreshLipSyncControls;
+            _micSensitivity.RegisterValueChangedCallback(evt =>
+            {
+                tracking.LipSync.Audio.Sensitivity = evt.newValue;
+                _micSensitivityValue.text = $"{evt.newValue:0.0}×";
+                tracking.NotifySettingsChanged();
+            });
+            _micGate.RegisterValueChangedCallback(evt =>
+            {
+                tracking.LipSync.Audio.GateDb = evt.newValue;
+                _micGateValue.text = $"{evt.newValue:0} dB";
+                PositionGateMark();
+                tracking.NotifySettingsChanged();
+            });
+            _bodyMode.RegisterValueChangedCallback(evt =>
+            {
+                if (_rebuildingChoices) return;
+                tracking.SetBodyMode(BodyOrder[ChoiceIndex(_bodyMode, evt.newValue)]);
+            });
+        }
+
+        private void RefreshLipSyncControls()
+        {
+            var tracking = _services.Tracking;
+            var mic = _services.Microphone;
+            var settings = tracking.LipSync;
+
+            SetChoice(_lipSyncMode, IndexOf(LipSyncOrder, settings.Mode));
+            _micRows.style.display = settings.Mode == LipSyncMode.Camera ? DisplayStyle.None : DisplayStyle.Flex;
+
+            _micNames = new List<string>(mic.Devices);
+            var choices = new List<string>(_micNames);
+            if (choices.Count == 0) choices.Add(_loc["lipsync.noMicrophone"]);
+            _rebuildingChoices = true;
+            try
+            {
+                _micDevice.choices = choices;
+                var selected = _micNames.IndexOf(mic.SelectedDevice ?? string.Empty);
+                _micDevice.SetValueWithoutNotify(choices[selected >= 0 ? selected : 0]);
+            }
+            finally
+            {
+                _rebuildingChoices = false;
+            }
+            _micDevice.SetEnabled(_micNames.Count > 0);
+
+            _micSensitivity.SetValueWithoutNotify(settings.Audio.Sensitivity);
+            _micSensitivityValue.text = $"{settings.Audio.Sensitivity:0.0}×";
+            _micGate.SetValueWithoutNotify(settings.Audio.GateDb);
+            _micGateValue.text = $"{settings.Audio.GateDb:0} dB";
+            PositionGateMark();
+            _micState.text = _loc[MicrophoneStateKey(mic.CurrentState)];
+
+            SetChoice(_bodyMode, IndexOf(BodyOrder, tracking.Body.Mode));
+            var poseOk = tracking.PoseEngineAvailable;
+            _bodyMode.SetEnabled(poseOk);
+            _bodyHint.text = poseOk ? _loc["body.hint"] : _loc["body.noEngine"];
+        }
+
+        private void PositionGateMark()
+        {
+            var a = _services.Tracking.LipSync.Audio;
+            var t = (a.GateDb - a.FloorDb) / (a.CeilingDb - a.FloorDb);
+            _micGateMark.style.left = new Length(Mathf.Clamp01(t) * 100f, LengthUnit.Percent);
+        }
+
+        private static string MicrophoneStateKey(MicrophoneCaptureService.State state)
+        {
+            switch (state)
+            {
+                case MicrophoneCaptureService.State.Stopped: return "mic.state.stopped";
+                case MicrophoneCaptureService.State.RequestingPermission: return "mic.state.permission";
+                case MicrophoneCaptureService.State.PermissionDenied: return "mic.state.denied";
+                case MicrophoneCaptureService.State.Starting: return "mic.state.starting";
+                case MicrophoneCaptureService.State.Running: return "mic.state.running";
+                case MicrophoneCaptureService.State.NoDevice: return "mic.state.noDevice";
+                default: return "mic.state.failed";
+            }
+        }
+
+        /// <summary>Per-frame updates that are too fast for the diagnostics window: the microphone level bar and the audio status.</summary>
+        public void TickFast()
+        {
+            var mic = _services.Microphone;
+            var meter = mic.Meter;
+            var running = mic.IsRunning;
+            var level = running ? meter.Envelope : 0f;
+            var raw = running ? Mathf.Clamp01((meter.RawDb - meter.Settings.FloorDb) / (meter.Settings.CeilingDb - meter.Settings.FloorDb)) : 0f;
+            _micLevelFill.style.width = new Length(Mathf.Max(level, raw * 0.5f) * 100f, LengthUnit.Percent);
+            _micLevelFill.EnableInClassList("silent", !meter.IsOpen);
+
+            var key = !running ? "status.audioOff" : meter.IsOpen ? "status.audioSpeaking" : "status.audioListening";
+            var text = _loc[key];
+            if (_statusAudio.text != text)
+            {
+                _statusAudio.text = text;
+                _statusAudio.EnableInClassList("status-dim", !running || !meter.IsOpen);
+            }
+        }
+
         // -------------------------------------------------------------- Framing
 
         private void BindFraming()
@@ -768,6 +935,7 @@ namespace VRMCast.UI
             _diagAvatar.text = _loc.Format("diag.avatar", snap.AvatarName, avatarVersion);
             _statusRenderFps.text = _loc.Format("status.render", snap.RenderFps.ToString("0.0"));
             _diagTracking.text = _loc.Format("diag.tracking", snap.TrackingFps.ToString("0.0"), snap.InferenceMs.ToString("0"), snap.TrackingDropped);
+            _diagPose.text = _loc.Format("diag.pose", snap.PoseFps.ToString("0.0"), snap.PoseInferenceMs.ToString("0"), snap.MicrophoneDb.ToString("0"));
             if (_services.Tracking.CurrentStatus == TrackingCoordinator.Status.Calibrating) RefreshTrackingControls();
         }
 
@@ -814,6 +982,7 @@ namespace VRMCast.UI
             _services.Camera2D.DevicesChanged -= RefreshWebcamControls;
             _services.Tracking.StatusChanged -= OnTrackingStatusChanged;
             _services.Tracking.SettingsChanged -= RefreshTrackingControls;
+            _services.Tracking.SettingsChanged -= RefreshLipSyncControls;
             _services.Tracking.CalibrationFinished -= OnCalibrationFinished;
             _loc.LanguageChanged -= OnLanguageChanged;
             _filePicker.Dispose();

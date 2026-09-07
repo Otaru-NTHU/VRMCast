@@ -1,6 +1,6 @@
 # Tracking
 
-Status: MVP-B (face tracking). Pose (MVP-C), hands and external providers are not implemented.
+Status: MVP-C (face tracking, microphone / hybrid lip sync, upper body). Hands and external providers are not implemented.
 
 ## Setup
 
@@ -81,7 +81,36 @@ devices (PRD 6.3).
 Tracking result fps, inference latency (submit → callback), dropped frames and face confidence are in the
 Diagnostics section and in the Copy Diagnostics report.
 
-## Not in MVP-B
+## Lip sync (PRD 13, 22)
 
-Pose Landmarker / upper body (MVP-C), microphone and hybrid lip sync (MVP-C), the mapping editor UI, hand tracking,
+`MicrophoneCaptureService` records a looping 1 s clip at 16 kHz through Unity's Microphone API and reads the new
+samples every frame into `AudioLevelMeter` (Core): RMS → dBFS → noise gate with 3 dB hysteresis → normalized
+level × sensitivity → attack (30 ms) / release (120 ms) envelope. Nothing is played back or routed; the
+microphone used here is independent of OBS's audio (PRD 22).
+
+`HybridLipSolver` (Core) rewrites the vowel expressions (aa/ih/ou/ee/oh) after the expression mapper:
+
+- Camera: untouched.
+- Microphone: aa = envelope.
+- Hybrid (default, D-008): amplitude = 0.45 × camera opening + 0.55 × envelope while a face is present, envelope
+  alone otherwise. While the gate hears silence the camera opening is limited to 30 % so landmark noise never
+  opens the mouth (PRD 13.3). The camera's vowel proportions (aa : ou : oh) are kept; the amplitude is rescaled.
+  With no microphone running, Hybrid behaves exactly like Camera.
+
+## Upper body (PRD 14)
+
+`MediaPipePoseProvider` runs Pose Landmarker (lite model, CPU, LIVE_STREAM) at 20 fps on frames ≤ 480 px wide,
+sharing the camera with the face tracker. `PoseFrameBuilder` (Core) copies the 33 world landmarks and derives
+torso angles from shoulders and hips: roll (left shoulder lower = lean toward the user's left), yaw (left shoulder
+farther = turn toward the user's left), pitch (shoulders closer to the camera than hips = lean forward).
+`BodyPoseSolver` applies a dead zone, gain, clamps (25° / 35° / 20°), smoothing and the same mirror rule as the
+head, and glides to neutral when the body is lost. Calibrate also captures the neutral torso (median window).
+
+`AvatarDriver` applies the torso rotation half to Spine and half to Chest and subtracts it from the head chain,
+because the head angles are camera-relative. Body tracking is on by default (PRD 34 `body_mode: upper_body`)
+and can be turned off in the BODY section; without the tracking engine the section is disabled.
+
+## Not in MVP-C
+
+The expression mapping editor UI, vowel classification from audio (A/I/U/E/O), hand tracking, full body,
 external providers (VMC/OSC/ARKit).

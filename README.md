@@ -5,11 +5,11 @@ Open-source real-time VRM avatar tracking, motion capture, and virtual camera fo
 VRMCast loads VRM 0.x and VRM 1.0 avatars, will drive them from a webcam / iPhone / microphone, and
 composites the result for OBS at 1920×1080 / 30 fps. Apple Silicon only.
 
-**Current milestone: MVP-B, face tracking.** The app loads avatars at runtime, frames them with camera
-presets, composites solid / image / chroma / transparent backgrounds into a dedicated 1920×1080 render
-texture, and drives head, eyes, blinks and mouth from a webcam through MediaPipe Face Landmarker with
-calibration and smoothing. Lip sync and upper body (MVP-C), profiles (MVP-D) and the macOS virtual camera
-(MVP-E) follow the sequence in [Docs/PRD.md](Docs/PRD.md).
+**Current milestone: MVP-C.** The app loads avatars at runtime, frames them with camera presets, composites
+solid / image / chroma / transparent backgrounds into a dedicated 1920×1080 render texture, drives head, eyes,
+blinks and mouth from a webcam through MediaPipe Face Landmarker with calibration and smoothing, adds
+microphone / hybrid lip sync and upper-body motion from Pose Landmarker. Profiles (MVP-D) and the macOS
+virtual camera (MVP-E) follow the sequence in [Docs/PRD.md](Docs/PRD.md).
 
 ## Stack
 
@@ -30,7 +30,7 @@ See [Docs/Architecture.md](Docs/Architecture.md) for the service layout and deci
 4. Open `Assets/VRMCast/Scenes/Main.unity` and press Play, or build with
    `Scripts/build-macos.sh` (produces `Builds/macOS/VRMCast.app`).
 5. Load VRM → pick a `.vrm` file. You can also pass a path: `open -a VRMCast.app --args /path/model.vrm`.
-6. Start Tracking, allow camera access, then Calibrate while facing the camera.
+6. Start Tracking, allow camera and microphone access, then Calibrate while facing the camera.
 
 If the scene opens with missing references (for example after a Unity upgrade), run
 **VRMCast > Setup > Rebuild Main Scene**; it regenerates the scene and UI assets.
