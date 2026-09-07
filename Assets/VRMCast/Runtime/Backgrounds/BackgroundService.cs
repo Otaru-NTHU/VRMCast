@@ -24,6 +24,7 @@ namespace VRMCast.Backgrounds
         private bool _disposed;
 
         public BackgroundSettings Settings { get; }
+        /// <summary>Localization key of the last image error, or null.</summary>
         public string LastError { get; private set; }
         public bool HasImage => _imageTexture != null;
 
@@ -92,7 +93,7 @@ namespace VRMCast.Backgrounds
             LastError = null;
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
-                LastError = "The background image could not be found.";
+                LastError = "error.imageMissing";
                 return false;
             }
 
@@ -103,7 +104,7 @@ namespace VRMCast.Backgrounds
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
-                LastError = "The background image could not be read.";
+                LastError = "error.imageUnreadable";
                 return false;
             }
 
@@ -115,7 +116,7 @@ namespace VRMCast.Backgrounds
             if (!texture.LoadImage(bytes, markNonReadable: true))
             {
                 UnityEngine.Object.Destroy(texture);
-                LastError = "The image format is not supported. Use PNG or JPEG.";
+                LastError = "error.imageFormat";
                 return false;
             }
 

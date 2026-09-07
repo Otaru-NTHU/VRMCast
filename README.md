@@ -15,7 +15,7 @@ upper body (MVP-C), profiles (MVP-D) and the macOS virtual camera (MVP-E) follow
 
 - Unity 6.3 LTS (`6000.3.20f1`), Built-in Render Pipeline, C#
 - [UniVRM](https://github.com/vrm-c/UniVRM) v0.131.2 for VRM 0.x and 1.0 runtime loading
-- Unity UI Toolkit for the desktop UI
+- Unity UI Toolkit for the desktop UI, in 繁體中文 (default) and English
 - Later: MediaPipeUnityPlugin (tracking), Core Media I/O Camera Extension (virtual camera)
 
 See [Docs/Architecture.md](Docs/Architecture.md) for the service layout and decisions.

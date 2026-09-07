@@ -2,6 +2,7 @@ using System;
 using VRMCast.Avatar;
 using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
+using VRMCast.Core.Localization;
 using VRMCast.Diagnostics;
 using VRMCast.Output;
 using VRMCast.Rendering;
@@ -14,6 +15,7 @@ namespace VRMCast.App
     /// </summary>
     public sealed class AppServices : IDisposable
     {
+        public Localizer Localizer { get; }
         public IRenderService Render { get; }
         public IAvatarService Avatars { get; }
         public BackgroundService Background { get; }
@@ -23,10 +25,11 @@ namespace VRMCast.App
         public NullOutput DebugOutput { get; }
         public DiagnosticsService Diagnostics { get; }
 
-        public AppServices(IRenderService render, IAvatarService avatars, BackgroundService background,
+        public AppServices(Localizer localizer, IRenderService render, IAvatarService avatars, BackgroundService background,
             AvatarCameraController camera, OutputService outputs, PreviewOutput preview, NullOutput debugOutput,
             DiagnosticsService diagnostics)
         {
+            Localizer = localizer;
             Render = render;
             Avatars = avatars;
             Background = background;

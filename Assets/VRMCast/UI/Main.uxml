@@ -3,14 +3,15 @@
     <ui:VisualElement name="app" class="app">
         <ui:VisualElement name="header" class="header">
             <ui:Label text="VRMCast" class="header-title" />
-            <ui:Label text="Render foundation (MVP-A)" class="header-subtitle" />
+            <ui:Label name="header-subtitle" text="" class="header-subtitle" />
             <ui:VisualElement class="spacer" />
-            <ui:Label text="Profile: Default" class="header-profile" />
+            <ui:Label name="header-profile" text="" class="header-profile" />
+            <ui:DropdownField name="language" label="" class="header-language" />
         </ui:VisualElement>
         <ui:VisualElement name="body" class="body">
             <ui:ScrollView name="sidebar" class="sidebar" mode="Vertical">
                 <ui:VisualElement class="section">
-                    <ui:Label text="MODEL" class="section-title" />
+                    <ui:Label name="section-model" text="" class="section-title" />
                     <ui:Label name="model-name" text="No avatar loaded" class="model-name" />
                     <ui:Label name="model-status" text="Load a .vrm file to begin." class="model-status" />
                     <ui:VisualElement class="row">
@@ -18,14 +19,14 @@
                         <ui:Button name="unload-vrm" text="Unload" />
                     </ui:VisualElement>
                     <ui:VisualElement name="import-advanced" class="advanced-box">
-                        <ui:Label text="Advanced import" class="advanced-title" />
+                        <ui:Label name="import-title" text="" class="advanced-title" />
                         <ui:DropdownField name="import-version" label="VRM Version" />
                         <ui:Button name="retry-load" text="Retry with this version" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
-                    <ui:Label text="FRAMING" class="section-title" />
+                    <ui:Label name="section-framing" text="" class="section-title" />
                     <ui:DropdownField name="framing-preset" label="Preset" />
                     <ui:VisualElement class="row">
                         <ui:Slider name="fov" label="FOV" low-value="10" high-value="90" value="30" class="grow" />
@@ -36,11 +37,11 @@
                         <ui:Button name="reset-orientation" text="Reset Orientation" class="grow" />
                     </ui:VisualElement>
                     <ui:Button name="reframe" text="Reframe to Avatar" />
-                    <ui:Label text="Preview: scroll = zoom, drag = orbit, right/middle or Shift+drag = pan" class="hint" />
+                    <ui:Label name="framing-hint" text="" class="hint" />
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
-                    <ui:Label text="BACKGROUND" class="section-title" />
+                    <ui:Label name="section-background" text="" class="section-title" />
                     <ui:DropdownField name="background-mode" label="Mode" />
                     <ui:VisualElement name="color-row" class="row">
                         <ui:Label name="color-label" text="Key color" class="field-label" />
@@ -58,13 +59,13 @@
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
-                    <ui:Label text="OUTPUT" class="section-title" />
+                    <ui:Label name="section-output" text="" class="section-title" />
                     <ui:DropdownField name="output-quality" label="Quality" />
-                    <ui:Label text="The virtual camera arrives in MVP-E. Start Output runs the debug consumer." class="hint" />
+                    <ui:Label name="output-hint" text="" class="hint" />
                 </ui:VisualElement>
 
                 <ui:VisualElement class="section">
-                    <ui:Label text="DIAGNOSTICS" class="section-title" />
+                    <ui:Label name="section-diagnostics" text="" class="section-title" />
                     <ui:Label name="diag-fps" text="Render: – fps" class="diag" />
                     <ui:Label name="diag-output" text="Output: –" class="diag" />
                     <ui:Label name="diag-avatar" text="Avatar: (none)" class="diag" />
@@ -80,8 +81,8 @@
         <ui:VisualElement name="status-bar" class="status-bar">
             <ui:Label name="status-resolution" text="1920×1080 | 30 FPS" class="status-item" />
             <ui:Label name="status-render-fps" text="Render – fps" class="status-item" />
-            <ui:Label text="Face: off" class="status-item status-dim" />
-            <ui:Label text="Audio: off" class="status-item status-dim" />
+            <ui:Label name="status-face" text="" class="status-item status-dim" />
+            <ui:Label name="status-audio" text="" class="status-item status-dim" />
             <ui:Label name="status-output" text="Output: off" class="status-item" />
             <ui:VisualElement class="spacer" />
             <ui:Button name="toggle-output" text="Start Output" class="primary" />

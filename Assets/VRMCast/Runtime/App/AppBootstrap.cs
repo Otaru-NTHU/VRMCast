@@ -6,6 +6,7 @@ using VRMCast.Backgrounds;
 using VRMCast.CameraControl;
 using VRMCast.Core.Backgrounds;
 using VRMCast.Core.Camera;
+using VRMCast.Core.Localization;
 using VRMCast.Core.Rendering;
 using VRMCast.Diagnostics;
 using VRMCast.Output;
@@ -38,6 +39,8 @@ namespace VRMCast.App
         [Tooltip("Optional .vrm to load on start (editor convenience). Command-line paths take precedence.")]
         [SerializeField] private string _startupVrmPath;
 
+        public const string LanguagePrefKey = "vrmcast.language";
+
         private AppServices _services;
         private MainView _view;
         private Transform _avatarRoot;
@@ -53,6 +56,13 @@ namespace VRMCast.App
 
             _avatarRoot = new GameObject("AvatarRoot").transform;
             _avatarRoot.SetParent(transform, worldPositionStays: false);
+
+            var localizer = new Localizer(LoadLanguagePreference());
+            localizer.LanguageChanged += language =>
+            {
+                PlayerPrefs.SetString(LanguagePrefKey, language.Code());
+                PlayerPrefs.Save();
+            };
 
             var outputSettings = SafeOutputSettings();
             var render = new RenderService(transform, outputSettings);
@@ -74,7 +84,7 @@ namespace VRMCast.App
 
             var diagnostics = new DiagnosticsService(render, avatars, background, camera, outputs);
 
-            _services = new AppServices(render, avatars, background, camera, outputs, preview, debugOutput, diagnostics);
+            _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics);
 
             if (_uiDocument != null)
             {
@@ -128,6 +138,12 @@ namespace VRMCast.App
                 Debug.LogWarning("AppBootstrap: invalid serialized output settings, falling back to 1920x1080 @ 30.");
                 return OutputSettings.Default;
             }
+        }
+
+        private static AppLanguage LoadLanguagePreference()
+        {
+            var code = PlayerPrefs.GetString(LanguagePrefKey, string.Empty);
+            return AppLanguageExtensions.TryParseCode(code, out var language) ? language : AppLanguageExtensions.Default;
         }
 
         private string ResolveStartupPath()

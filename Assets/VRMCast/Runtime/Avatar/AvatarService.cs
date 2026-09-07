@@ -5,6 +5,7 @@ using UniGLTF;
 using UnityEngine;
 using UniVRM10;
 using VRM;
+using VRMCast.Core.Localization;
 using VRMCast.Core.Vrm;
 
 namespace VRMCast.Avatar
@@ -24,11 +25,11 @@ namespace VRMCast.Avatar
         public LoadedAvatar Current { get; private set; }
         public bool HasAvatar => Current != null && Current.IsAlive;
         public bool IsLoading { get; private set; }
-        public string LastError { get; private set; }
+        public Message LastError { get; private set; }
 
         public event Action<LoadedAvatar> AvatarLoaded;
         public event Action AvatarUnloaded;
-        public event Action<string> LoadFailed;
+        public event Action<Message> LoadFailed;
         public event Action<bool> LoadingStateChanged;
 
         /// <param name="avatarRoot">Scene transform that loaded avatars are parented under (identity pose expected).</param>
@@ -63,7 +64,7 @@ namespace VRMCast.Avatar
                     Current.Root.transform.SetParent(_avatarRoot, worldPositionStays: false);
                     Current.Root.transform.localPosition = Vector3.zero;
                     Current.Root.transform.localRotation = Quaternion.identity;
-                    LastError = null;
+                    LastError = default;
                     AvatarLoaded?.Invoke(Current);
                 }
                 else
@@ -94,7 +95,8 @@ namespace VRMCast.Avatar
             }
             if (versionOverride != VrmVersionOverride.AutoDetect && inspection.Version != VrmVersion.Unknown && inspection.Version != version)
             {
-                return AvatarLoadResult.Fail($"This file was detected as {Label(inspection.Version)}; loading it as {Label(version)} is not supported.");
+                return AvatarLoadResult.Fail(Message.Of(VrmLoadErrors.VersionMismatch,
+                    Message.Of(inspection.Version.LabelKey()), Message.Of(version.LabelKey())));
             }
 
             try
@@ -218,8 +220,6 @@ namespace VRMCast.Avatar
             IsLoading = loading;
             LoadingStateChanged?.Invoke(loading);
         }
-
-        private static string Label(VrmVersion v) => v == VrmVersion.Vrm0 ? "VRM 0.x" : v == VrmVersion.Vrm1 ? "VRM 1.0" : "unknown";
 
         public void Dispose()
         {

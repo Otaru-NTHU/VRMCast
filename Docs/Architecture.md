@@ -116,6 +116,19 @@ alpha to 0; the render texture is always ARGB so an alpha-capable output can use
 enables a hand-built quad parented to the camera at 50 m, resized every LateUpdate to the frustum and
 the `ImageFitSolver` result. PNG and JPEG are loaded through `ImageConversion`; HEIC is not supported.
 
+## Localization
+
+The UI is bilingual: Traditional Chinese (default) and English, switchable from the header dropdown and
+remembered in `PlayerPrefs` (`vrmcast.language`). `VRMCast.Core.Localization` holds the `Localizer`, the
+`Message` struct (key + format args, translated at display time) and `LocalizationTable` with both string
+tables; a test enforces that both languages define the same keys. Services never produce sentences:
+`VrmLoadErrors` and `BackgroundService.LastError` are keys, `AvatarLoadResult.Error` is a `Message`, and
+`MainView` translates when it renders. Dropdowns map by index, so labels change language without touching
+the enum mapping. Diagnostics reports stay English so they paste cleanly into bug reports.
+
+Unity's default UI font has no CJK glyphs, so `Assets/VRMCast/UI/Fonts/NotoSansTC-Regular.otf`
+(SIL OFL) is applied through `-unity-font-definition` on the app root and the modal overlay.
+
 ## File selection
 
 Standalone Unity has no native open-file dialog without a plugin, and MVP-A adds no native code. The

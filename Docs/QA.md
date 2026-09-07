@@ -49,7 +49,11 @@ VRM Consortium sample models and models exported from VRoid Studio in both forma
 14. **UI never in output.** Take Transparent or Chroma mode and read back the texture (later: OBS). No
     sidebar or status bar pixels exist in the output frame. In the editor, inspect
     `OutputRenderTexture` in the Frame Debugger: only the avatar camera writes to it.
-15. **Command line.** `open -a VRMCast.app --args /path/to/model.vrm` loads that model at start.
+15. **Language.** The app starts in 繁體中文. Switch the header dropdown to English: every label, dropdown
+    choice, status text and the file picker change immediately; the current selections (preset,
+    background mode, quality) are preserved. Quit and relaunch: the choice is remembered. Chinese text
+    renders with real glyphs, never boxes, including Chinese file names in the file picker.
+16. **Command line.** `open -a VRMCast.app --args /path/to/model.vrm` loads that model at start.
 
 ## Known gaps in MVP-A
 

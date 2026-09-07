@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using VRMCast.Core.Localization;
 
 namespace VRMCast.UI
 {
@@ -12,7 +13,7 @@ namespace VRMCast.UI
     /// without a plugin, and MVP-A deliberately avoids native code; a macOS NSOpenPanel bridge can replace this later
     /// (see Docs/Architecture.md). Hidden files are skipped; the path field accepts a typed or pasted path.
     /// </summary>
-    public sealed class FilePickerView
+    public sealed class FilePickerView : IDisposable
     {
         private sealed class Entry
         {
@@ -21,21 +22,32 @@ namespace VRMCast.UI
             public bool IsDirectory;
         }
 
+        private readonly Localizer _loc;
         private readonly VisualElement _overlay;
         private readonly Label _title;
         private readonly Label _error;
         private readonly TextField _pathField;
         private readonly ListView _list;
+        private readonly Button _upButton;
+        private readonly Button _homeButton;
+        private readonly Button _desktopButton;
+        private readonly Button _downloadsButton;
+        private readonly Button _documentsButton;
+        private readonly Button _cancelButton;
         private readonly Button _openButton;
         private readonly List<Entry> _entries = new List<Entry>();
         private string _currentDirectory;
+        private string _titleKey = "picker.loadVrm";
+        private string _errorKey;
         private string[] _extensions = Array.Empty<string>();
         private Action<string> _onPicked;
 
         public bool IsOpen => _overlay.style.display == DisplayStyle.Flex;
 
-        public FilePickerView(VisualElement root)
+        public FilePickerView(VisualElement root, Localizer localizer)
         {
+            _loc = localizer ?? throw new ArgumentNullException(nameof(localizer));
+
             _overlay = new VisualElement { name = "file-picker-overlay" };
             _overlay.AddToClassList("modal-overlay");
             _overlay.style.display = DisplayStyle.None;
@@ -45,17 +57,18 @@ namespace VRMCast.UI
             dialog.AddToClassList("modal-dialog");
             _overlay.Add(dialog);
 
-            _title = new Label("Open") { name = "file-picker-title" };
+            _title = new Label { name = "file-picker-title" };
             _title.AddToClassList("modal-title");
             dialog.Add(_title);
 
             var shortcuts = new VisualElement();
             shortcuts.AddToClassList("row");
-            shortcuts.Add(new Button(() => Navigate(Directory.GetParent(_currentDirectory)?.FullName)) { text = "Up" });
-            AddShortcut(shortcuts, "Home", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-            AddShortcut(shortcuts, "Desktop", Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
-            AddShortcut(shortcuts, "Downloads", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"));
-            AddShortcut(shortcuts, "Documents", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            _upButton = new Button(() => Navigate(Directory.GetParent(_currentDirectory)?.FullName));
+            shortcuts.Add(_upButton);
+            _homeButton = AddShortcut(shortcuts, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            _desktopButton = AddShortcut(shortcuts, Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+            _downloadsButton = AddShortcut(shortcuts, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"));
+            _documentsButton = AddShortcut(shortcuts, Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             dialog.Add(shortcuts);
 
             _pathField = new TextField { name = "file-picker-path" };
@@ -81,8 +94,9 @@ namespace VRMCast.UI
             var buttons = new VisualElement();
             buttons.AddToClassList("row");
             buttons.AddToClassList("row-right");
-            buttons.Add(new Button(Hide) { text = "Cancel" });
-            _openButton = new Button(OpenTypedPath) { text = "Open" };
+            _cancelButton = new Button(Hide);
+            buttons.Add(_cancelButton);
+            _openButton = new Button(OpenTypedPath);
             _openButton.AddToClassList("primary");
             buttons.Add(_openButton);
             dialog.Add(buttons);
@@ -91,15 +105,20 @@ namespace VRMCast.UI
             {
                 if (evt.keyCode == KeyCode.Escape) Hide();
             });
+
+            _loc.LanguageChanged += OnLanguageChanged;
+            ApplyLanguage();
         }
 
+        /// <param name="titleKey">Localization key of the dialog title.</param>
         /// <param name="extensions">Lower-case extensions including the dot, e.g. ".vrm". Empty shows every file.</param>
-        public void Show(string title, string[] extensions, string initialDirectory, Action<string> onPicked)
+        public void Show(string titleKey, string[] extensions, string initialDirectory, Action<string> onPicked)
         {
-            _title.text = title;
+            _titleKey = titleKey;
+            _title.text = _loc[titleKey];
             _extensions = extensions ?? Array.Empty<string>();
             _onPicked = onPicked;
-            _error.text = string.Empty;
+            SetError(null);
             _overlay.style.display = DisplayStyle.Flex;
 
             var start = !string.IsNullOrEmpty(initialDirectory) && Directory.Exists(initialDirectory)
@@ -115,11 +134,33 @@ namespace VRMCast.UI
             _onPicked = null;
         }
 
-        private void AddShortcut(VisualElement parent, string label, string path)
+        private void OnLanguageChanged(AppLanguage _) => ApplyLanguage();
+
+        private void ApplyLanguage()
         {
-            var button = new Button(() => Navigate(path)) { text = label };
+            _title.text = _loc[_titleKey];
+            _upButton.text = _loc["picker.up"];
+            _homeButton.text = _loc["picker.home"];
+            _desktopButton.text = _loc["picker.desktop"];
+            _downloadsButton.text = _loc["picker.downloads"];
+            _documentsButton.text = _loc["picker.documents"];
+            _cancelButton.text = _loc["picker.cancel"];
+            _openButton.text = _loc["picker.open"];
+            _error.text = _errorKey == null ? string.Empty : _loc[_errorKey];
+        }
+
+        private void SetError(string key)
+        {
+            _errorKey = key;
+            _error.text = key == null ? string.Empty : _loc[key];
+        }
+
+        private Button AddShortcut(VisualElement parent, string path)
+        {
+            var button = new Button(() => Navigate(path));
             button.SetEnabled(!string.IsNullOrEmpty(path) && Directory.Exists(path));
             parent.Add(button);
+            return button;
         }
 
         private static VisualElement MakeItem()
@@ -142,7 +183,7 @@ namespace VRMCast.UI
             if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory)) return;
             _currentDirectory = directory;
             _pathField.SetValueWithoutNotify(directory);
-            _error.text = string.Empty;
+            SetError(null);
             _entries.Clear();
 
             try
@@ -160,7 +201,7 @@ namespace VRMCast.UI
             }
             catch (Exception e) when (e is UnauthorizedAccessException || e is IOException)
             {
-                _error.text = "This folder cannot be read.";
+                SetError("picker.folderUnreadable");
             }
 
             _list.ClearSelection();
@@ -194,8 +235,8 @@ namespace VRMCast.UI
             var path = _pathField.value?.Trim();
             if (string.IsNullOrEmpty(path)) return;
             if (Directory.Exists(path)) { Navigate(path); return; }
-            if (!File.Exists(path)) { _error.text = "That file does not exist."; return; }
-            if (!MatchesFilter(path)) { _error.text = "That file type is not supported here."; return; }
+            if (!File.Exists(path)) { SetError("picker.fileMissing"); return; }
+            if (!MatchesFilter(path)) { SetError("picker.wrongType"); return; }
             Pick(path);
         }
 
@@ -204,6 +245,11 @@ namespace VRMCast.UI
             var callback = _onPicked;
             Hide();
             callback?.Invoke(path);
+        }
+
+        public void Dispose()
+        {
+            _loc.LanguageChanged -= OnLanguageChanged;
         }
     }
 }

@@ -16,6 +16,8 @@ a dedicated dependency-update commit and must update this file and `Scripts/veri
 | Unity Timeline (`com.unity.timeline`, pulled in by `com.vrmc.vrm`) | resolved by UPM | Unity Companion License | Unity Registry |
 | Unity Mathematics (`com.unity.mathematics`, pulled in by `com.vrmc.gltf`) | resolved by UPM | Unity Companion License | Unity Registry |
 
+| Noto Sans TC (`Assets/VRMCast/UI/Fonts/NotoSansTC-Regular.otf`) | Noto CJK 2.004 static TC subset | SIL Open Font License 1.1 (`Assets/VRMCast/UI/Fonts/LICENSE-NotoSansTC.txt`) | https://github.com/notofonts/noto-cjk |
+
 UniVRM bundles MToon (MIT, Santarh / VRM Consortium) and UniHumanoid (MIT).
 
 ## Development-only dependencies

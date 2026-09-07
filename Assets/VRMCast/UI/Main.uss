@@ -11,6 +11,11 @@
     --ok: rgb(96, 200, 120);
 }
 
+/* Bundled Noto Sans TC (SIL OFL) so Traditional Chinese renders in the editor and in builds. */
+.app, .modal-overlay {
+    -unity-font-definition: url("Fonts/NotoSansTC-Regular.otf");
+}
+
 .app {
     flex-grow: 1;
     background-color: var(--bg);
@@ -40,6 +45,18 @@
 }
 
 .header-profile {
+    color: var(--text-dim);
+    margin-right: 12px;
+}
+
+.header-language {
+    width: 190px;
+    margin: 0;
+}
+
+.header-language > Label {
+    min-width: 0;
+    margin-right: 6px;
     color: var(--text-dim);
 }
 

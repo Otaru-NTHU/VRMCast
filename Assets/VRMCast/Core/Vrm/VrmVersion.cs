@@ -25,4 +25,18 @@ namespace VRMCast.Core.Vrm
         ForceVrm0 = 1,
         ForceVrm1 = 2,
     }
+
+    public static class VrmVersionExtensions
+    {
+        /// <summary>Localization key of the version label (see LocalizationTable).</summary>
+        public static string LabelKey(this VrmVersion version)
+        {
+            switch (version)
+            {
+                case VrmVersion.Vrm0: return "vrm.0x";
+                case VrmVersion.Vrm1: return "vrm.10";
+                default: return "vrm.unknown";
+            }
+        }
+    }
 }
