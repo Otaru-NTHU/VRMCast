@@ -103,6 +103,8 @@ namespace VRMCast.UI
 
         // Framing
         private readonly DropdownField _framingPreset;
+        private readonly Slider _zoom;
+        private readonly Label _zoomValue;
         private readonly Slider _fov;
         private readonly Label _fovValue;
 
@@ -192,6 +194,8 @@ namespace VRMCast.UI
             _statusAudio = Q<Label>("status-audio");
 
             _framingPreset = Q<DropdownField>("framing-preset");
+            _zoom = Q<Slider>("zoom");
+            _zoomValue = Q<Label>("zoom-value");
             _fov = Q<Slider>("fov");
             _fovValue = Q<Label>("fov-value");
 
@@ -365,6 +369,7 @@ namespace VRMCast.UI
             Q<Label>("section-framing").text = _loc["section.framing"];
             _framingPreset.label = _loc["framing.preset"];
             RebuildChoices(_framingPreset, Localized(FramingKeys));
+            _zoom.label = _loc["framing.zoom"];
             _fov.label = _loc["framing.fov"];
             Q<Button>("reset-camera").text = _loc["framing.resetCamera"];
             Q<Button>("reset-orientation").text = _loc["framing.resetOrientation"];
@@ -788,6 +793,9 @@ namespace VRMCast.UI
                 _services.Camera.SetPreset(FramingOrder[ChoiceIndex(_framingPreset, evt.newValue)]);
             });
 
+            _zoom.lowValue = AvatarCameraState.MinZoom;
+            _zoom.highValue = AvatarCameraState.MaxZoom;
+            _zoom.RegisterValueChangedCallback(evt => _services.Camera.SetZoom(evt.newValue));
             _fov.lowValue = AvatarCameraState.MinFovDeg;
             _fov.highValue = AvatarCameraState.MaxFovDeg;
             _fov.RegisterValueChangedCallback(evt => _services.Camera.SetFov(evt.newValue));
@@ -801,6 +809,8 @@ namespace VRMCast.UI
         {
             var state = _services.Camera.State;
             SetChoice(_framingPreset, IndexOf(FramingOrder, state.Preset));
+            _zoom.SetValueWithoutNotify(state.Zoom);
+            _zoomValue.text = $"{state.Zoom:0.0}×";
             _fov.SetValueWithoutNotify(state.FovDeg);
             _fovValue.text = $"{state.FovDeg:0}°";
         }

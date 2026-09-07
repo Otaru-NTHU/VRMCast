@@ -59,11 +59,12 @@ namespace VRMCast.Core.Localization
             ["framing.bust"] = "胸像",
             ["framing.halfBody"] = "半身",
             ["framing.fullBody"] = "全身",
+            ["framing.zoom"] = "縮放",
             ["framing.fov"] = "視角",
             ["framing.resetCamera"] = "重設鏡頭",
             ["framing.resetOrientation"] = "重設方向",
             ["framing.reframe"] = "重新對準模型",
-            ["framing.hint"] = "預覽區：滾輪＝縮放，拖曳＝環繞，右鍵／中鍵或 Shift＋拖曳＝平移",
+            ["framing.hint"] = "預覽區：滾輪或觸控板兩指上下滑＝縮放，拖曳＝環繞，右鍵／中鍵或 Shift＋拖曳＝平移",
 
             // Background section
             ["section.background"] = "背景",
@@ -253,11 +254,12 @@ namespace VRMCast.Core.Localization
             ["framing.bust"] = "Bust",
             ["framing.halfBody"] = "Half Body",
             ["framing.fullBody"] = "Full Body",
+            ["framing.zoom"] = "Zoom",
             ["framing.fov"] = "FOV",
             ["framing.resetCamera"] = "Reset Camera",
             ["framing.resetOrientation"] = "Reset Orientation",
             ["framing.reframe"] = "Reframe to Avatar",
-            ["framing.hint"] = "Preview: scroll = zoom, drag = orbit, right/middle or Shift+drag = pan",
+            ["framing.hint"] = "Preview: scroll or two-finger swipe = zoom, drag = orbit, right/middle or Shift+drag = pan",
 
             // Background section
             ["section.background"] = "BACKGROUND",

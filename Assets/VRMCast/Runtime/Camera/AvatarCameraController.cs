@@ -13,7 +13,8 @@ namespace VRMCast.CameraControl
     /// </summary>
     public sealed class AvatarCameraController : IDisposable
     {
-        public const float ZoomStepPerScrollUnit = 0.05f;
+        public const float ZoomStepPerScrollUnit = 0.12f;
+        public const float MaxScrollUnitsPerEvent = 3f;
         public const float OrbitDegreesPerPixel = 0.4f;
         public const float PanHeightsPerPixel = 0.0015f;
 
@@ -46,6 +47,8 @@ namespace VRMCast.CameraControl
         /// <summary>Scroll zoom. Positive delta zooms in.</summary>
         public void ZoomBy(float scrollDelta)
         {
+            // Trackpads send many tiny deltas, mice send whole lines; clamp so a mouse wheel does not jump.
+            scrollDelta = Mathf.Clamp(scrollDelta, -MaxScrollUnitsPerEvent, MaxScrollUnitsPerEvent);
             State.Zoom *= Mathf.Pow(1f + ZoomStepPerScrollUnit, scrollDelta);
             MarkChanged();
         }

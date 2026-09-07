@@ -103,6 +103,10 @@
                     <ui:Label name="section-framing" text="" class="section-title" />
                     <ui:DropdownField name="framing-preset" label="Preset" />
                     <ui:VisualElement class="row">
+                        <ui:Slider name="zoom" label="" low-value="0.25" high-value="4" value="1" class="grow" />
+                        <ui:Label name="zoom-value" text="1.0×" class="value-label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="row">
                         <ui:Slider name="fov" label="FOV" low-value="10" high-value="90" value="30" class="grow" />
                         <ui:Label name="fov-value" text="30°" class="value-label" />
                     </ui:VisualElement>
