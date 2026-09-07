@@ -1,0 +1,445 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C0000000000000000000C002 /* VRMCastCameraExtension.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B002 /* VRMCastCameraExtension.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C0000000000000000000C010 /* HostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B010 /* HostApp.swift */; };
+		C0000000000000000000C011 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B011 /* ContentView.swift */; };
+		C0000000000000000000C012 /* ExtensionActivator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B012 /* ExtensionActivator.swift */; };
+		C0000000000000000000C013 /* SinkFrameSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B013 /* SinkFrameSender.swift */; };
+		C0000000000000000000C014 /* CMIODeviceQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B014 /* CMIODeviceQuery.swift */; };
+		C0000000000000000000C017 /* SpikeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B017 /* SpikeModel.swift */; };
+		C0000000000000000000C020 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B020 /* main.swift */; };
+		C0000000000000000000C021 /* CameraExtensionProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B021 /* CameraExtensionProvider.swift */; };
+		C0000000000000000000C030 /* VirtualCameraConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B030 /* VirtualCameraConstants.swift */; };
+		C0000000000000000000C031 /* TestPatternPainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B031 /* TestPatternPainter.swift */; };
+		C0000000000000000000C130 /* VirtualCameraConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B030 /* VirtualCameraConstants.swift */; };
+		C0000000000000000000C131 /* TestPatternPainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000B031 /* TestPatternPainter.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F0000000000000000000F002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A0000000000000000000A001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0000000000000000000D002;
+			remoteInfo = VRMCastCameraExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E0000000000000000000E004 /* Embed System Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Library/SystemExtensions";
+			dstSubfolderSpec = 16;
+			files = (
+				C0000000000000000000C002 /* VRMCastCameraExtension.systemextension in Embed System Extensions */,
+			);
+			name = "Embed System Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		B0000000000000000000B001 /* VRMCastCameraSpike.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VRMCastCameraSpike.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0000000000000000000B002 /* VRMCastCameraExtension.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; path = VRMCastCameraExtension.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0000000000000000000B010 /* HostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostApp.swift; sourceTree = "<group>"; };
+		B0000000000000000000B011 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B0000000000000000000B012 /* ExtensionActivator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionActivator.swift; sourceTree = "<group>"; };
+		B0000000000000000000B013 /* SinkFrameSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SinkFrameSender.swift; sourceTree = "<group>"; };
+		B0000000000000000000B014 /* CMIODeviceQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CMIODeviceQuery.swift; sourceTree = "<group>"; };
+		B0000000000000000000B015 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B0000000000000000000B016 /* Host.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Host.entitlements; sourceTree = "<group>"; };
+		B0000000000000000000B017 /* SpikeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpikeModel.swift; sourceTree = "<group>"; };
+		B0000000000000000000B020 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B0000000000000000000B021 /* CameraExtensionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraExtensionProvider.swift; sourceTree = "<group>"; };
+		B0000000000000000000B022 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B0000000000000000000B023 /* Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Extension.entitlements; sourceTree = "<group>"; };
+		B0000000000000000000B030 /* VirtualCameraConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualCameraConstants.swift; sourceTree = "<group>"; };
+		B0000000000000000000B031 /* TestPatternPainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestPatternPainter.swift; sourceTree = "<group>"; };
+		B0000000000000000000B040 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E0000000000000000000E002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0000000000000000000E012 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A0000000000000000000A002 = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000A004 /* Host */,
+				A0000000000000000000A005 /* Extension */,
+				A0000000000000000000A006 /* Shared */,
+				A0000000000000000000A007 /* Config */,
+				A0000000000000000000A003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A0000000000000000000A003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000B001 /* VRMCastCameraSpike.app */,
+				B0000000000000000000B002 /* VRMCastCameraExtension.systemextension */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000A004 /* Host */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000B010 /* HostApp.swift */,
+				B0000000000000000000B017 /* SpikeModel.swift */,
+				B0000000000000000000B011 /* ContentView.swift */,
+				B0000000000000000000B012 /* ExtensionActivator.swift */,
+				B0000000000000000000B014 /* CMIODeviceQuery.swift */,
+				B0000000000000000000B013 /* SinkFrameSender.swift */,
+				B0000000000000000000B015 /* Info.plist */,
+				B0000000000000000000B016 /* Host.entitlements */,
+			);
+			path = Host;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000A005 /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000B020 /* main.swift */,
+				B0000000000000000000B021 /* CameraExtensionProvider.swift */,
+				B0000000000000000000B022 /* Info.plist */,
+				B0000000000000000000B023 /* Extension.entitlements */,
+			);
+			path = Extension;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000A006 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000B030 /* VirtualCameraConstants.swift */,
+				B0000000000000000000B031 /* TestPatternPainter.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000A007 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000B040 /* Signing.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D0000000000000000000D001 /* VRMCastCameraSpike */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DD0000000000000000000002 /* Build configuration list for PBXNativeTarget "VRMCastCameraSpike" */;
+			buildPhases = (
+				E0000000000000000000E001 /* Sources */,
+				E0000000000000000000E002 /* Frameworks */,
+				E0000000000000000000E003 /* Resources */,
+				E0000000000000000000E004 /* Embed System Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F0000000000000000000F001 /* PBXTargetDependency */,
+			);
+			name = VRMCastCameraSpike;
+			productName = VRMCastCameraSpike;
+			productReference = B0000000000000000000B001 /* VRMCastCameraSpike.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D0000000000000000000D002 /* VRMCastCameraExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DD0000000000000000000003 /* Build configuration list for PBXNativeTarget "VRMCastCameraExtension" */;
+			buildPhases = (
+				E0000000000000000000E011 /* Sources */,
+				E0000000000000000000E012 /* Frameworks */,
+				E0000000000000000000E013 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VRMCastCameraExtension;
+			productName = VRMCastCameraExtension;
+			productReference = B0000000000000000000B002 /* VRMCastCameraExtension.systemextension */;
+			productType = "com.apple.product-type.system-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A0000000000000000000A001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					D0000000000000000000D001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					D0000000000000000000D002 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = DD0000000000000000000001 /* Build configuration list for PBXProject "VRMCastCameraSpike" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A0000000000000000000A002;
+			productRefGroup = A0000000000000000000A003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D0000000000000000000D001 /* VRMCastCameraSpike */,
+				D0000000000000000000D002 /* VRMCastCameraExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E0000000000000000000E003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0000000000000000000E013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E0000000000000000000E001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C0000000000000000000C010 /* HostApp.swift in Sources */,
+				C0000000000000000000C017 /* SpikeModel.swift in Sources */,
+				C0000000000000000000C011 /* ContentView.swift in Sources */,
+				C0000000000000000000C012 /* ExtensionActivator.swift in Sources */,
+				C0000000000000000000C014 /* CMIODeviceQuery.swift in Sources */,
+				C0000000000000000000C013 /* SinkFrameSender.swift in Sources */,
+				C0000000000000000000C030 /* VirtualCameraConstants.swift in Sources */,
+				C0000000000000000000C031 /* TestPatternPainter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0000000000000000000E011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C0000000000000000000C020 /* main.swift in Sources */,
+				C0000000000000000000C021 /* CameraExtensionProvider.swift in Sources */,
+				C0000000000000000000C130 /* VirtualCameraConstants.swift in Sources */,
+				C0000000000000000000C131 /* TestPatternPainter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F0000000000000000000F001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0000000000000000000D002 /* VRMCastCameraExtension */;
+			targetProxy = F0000000000000000000F002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		DD0000000000000000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0000000000000000000B040 /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DD0000000000000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0000000000000000000B040 /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		DD0000000000000000000021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Host/Host.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Host/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		DD0000000000000000000022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Host/Host.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Host/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+		DD0000000000000000000031 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Extension/Extension.entitlements;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Extension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike.Camera";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		DD0000000000000000000032 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Extension/Extension.entitlements;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Extension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VRMCAST_BUNDLE_PREFIX).CameraSpike.Camera";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DD0000000000000000000001 /* Build configuration list for PBXProject "VRMCastCameraSpike" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD0000000000000000000011 /* Debug */,
+				DD0000000000000000000012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DD0000000000000000000002 /* Build configuration list for PBXNativeTarget "VRMCastCameraSpike" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD0000000000000000000021 /* Debug */,
+				DD0000000000000000000022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DD0000000000000000000003 /* Build configuration list for PBXNativeTarget "VRMCastCameraExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD0000000000000000000031 /* Debug */,
+				DD0000000000000000000032 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A0000000000000000000A001 /* Project object */;
+}

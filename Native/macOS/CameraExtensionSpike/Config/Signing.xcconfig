@@ -1,0 +1,18 @@
+// Per-developer signing settings for the Camera Extension spike.
+//
+// System extensions must be signed by a real Apple Developer team: set DEVELOPMENT_TEAM to your
+// 10-character Team ID (Xcode › Settings › Accounts, or developer.apple.com › Membership).
+// "Sign to Run Locally" cannot carry the system-extension entitlement and activation will fail.
+//
+// Do not commit your personal Team ID: run `git update-index --skip-worktree` on this file, or
+// override on the command line: xcodebuild ... DEVELOPMENT_TEAM=ABCDE12345
+DEVELOPMENT_TEAM =
+
+// Reverse-DNS prefix for both bundles. The host becomes <prefix>.CameraSpike and the extension
+// <prefix>.CameraSpike.Camera; the App Group is <TeamID>.<prefix> and the extension's Mach service
+// <TeamID>.<prefix>.camera (it must start with an App Group the extension belongs to).
+VRMCAST_BUNDLE_PREFIX = com.vrmcast
+
+CODE_SIGN_STYLE = Automatic
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1

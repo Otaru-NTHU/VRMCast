@@ -41,11 +41,11 @@ UniVRM bundles MToon (MIT, Santarh / VRM Consortium) and UniHumanoid (MIT).
 The plugin's own `Third Party Notices.md` (Abseil, OpenCV, protobuf, TensorFlow Lite and others) applies to the
 native library and is included in the package.
 
-## Planned (not yet in the project)
+## Native macOS components
 
-| Component | License | Milestone |
+| Component | License | Notes |
 | --- | --- | --- |
-| Apple Core Media I/O Camera Extension APIs | Apple SDK license | MVP-E |
+| Apple SDK frameworks (SwiftUI, SystemExtensions, CoreMediaIO, CoreVideo) | Apple SDK license | `Native/macOS/CameraExtensionSpike`; no third-party code |
 
 No paid assets, no cloud inference, no network dependency for runtime tracking (PRD 40, 41).
 

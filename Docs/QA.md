@@ -122,6 +122,25 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
    the preview keeps rendering and the debug output keeps counting frames. Esc or Tab returns.
 6. **Blink.** Advanced settings → Blink strength: at 1.8 (default) a normal blink closes the avatar's eyes fully.
 
+## Manual QA: MVP-E camera extension spike (PRD 43)
+
+Follow "Building and testing the spike" in `Docs/VirtualCamera.md` on a Mac with Xcode and OBS. Pass
+criteria (PRD 43 definition of done, PRD 37.6):
+
+1. `VRM Live Camera` appears in OBS › Video Capture Device after approval; `systemextensionsctl list`
+   shows it `[activated enabled]`.
+2. Without the host sending, OBS shows the extension's pattern: colour bars, red lower band, moving square,
+   growing progress line; source properties report 1920×1080.
+3. **Start Sending 1080p30** turns the band blue within a second; the counter grows by ~30/s with zero
+   enqueue failures.
+4. **Stop Sending** or quitting the app returns to red within ~0.5 s; never a frozen or black frame.
+5. Restarting OBS keeps the device listed and streaming; no reinstall.
+6. 10 minutes of continuous sending: OBS Stats stays at ~30 fps, no enqueue failures, flat memory in the
+   host and the `VRMCastCameraExtension` process.
+7. **Uninstall** removes the device from OBS.
+
+Record macOS version, Xcode version, OBS version, and whether approval required a reboot.
+
 ## Known gaps in MVP-A
 
 - No native open-file dialog; the in-app browser or a command-line path is used instead.
@@ -129,7 +148,8 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
 - Expression driving exists in the API (`LoadedAvatar.SetExpressionWeight`) but has no UI until the
   hotkey milestone; acceptance 37.1 "expressions can be driven" is verified through the Unity Test
   Runner playmode or the editor inspector, not through the app UI.
-- The output consumer is a debug counter; nothing reaches OBS until MVP-E.
+- The output consumer inside VRMCast.app is still a debug counter; the camera extension spike is a
+  separate app until the Unity bridge lands (MVP-E, `Docs/VirtualCamera.md`).
 
 ## Hardware matrix (PRD 38)
 

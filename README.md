@@ -42,6 +42,8 @@ If the scene opens with missing references (for example after a Unity upgrade), 
 Scripts/run-core-tests.sh        # engine-free tests with the .NET 8 SDK, no Unity needed
 Scripts/run-unity-tests.sh       # same tests inside the Unity Test Runner (EditMode)
 Scripts/verify-dependencies.sh   # checks pinned dependency versions
+Scripts/check-xcodeproj.py Native/macOS/CameraExtensionSpike/VRMCastCameraSpike.xcodeproj  # project file sanity
+Scripts/build-camera-spike.sh --install DEVELOPMENT_TEAM=<TeamID>   # builds the camera extension spike (Xcode)
 ```
 
 Manual QA steps for each milestone are in [Docs/QA.md](Docs/QA.md).
@@ -58,7 +60,7 @@ Assets/VRMCast/
   UI/         Main.uxml, Main.uss, PanelSettings, theme, background material
   Scenes/     Main.unity
 Docs/         PRD, Architecture, QA, Tracking, VirtualCamera
-Native/macOS/ reserved for the frame bridge, camera extension and installer helper (MVP-E)
+Native/macOS/ Camera Extension spike (Xcode), later the Unity frame bridge and installer helper (MVP-E)
 Scripts/      build, test and dependency scripts
 ```
 

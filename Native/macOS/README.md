@@ -1,12 +1,14 @@
-# Native macOS components (reserved)
+# Native macOS components
 
-Nothing here is built yet. The PRD schedules native code only after the render and tracking
-foundations are stable (PRD 20.4, 43):
+| Directory | Purpose | State |
+| --- | --- | --- |
+| `CameraExtensionSpike/` | Xcode project: host app + Core Media I/O Camera Extension publishing `VRM Live Camera` with a generated 1080p30 test pattern and a sink stream for host frames (PRD 43). | written, needs on-device validation |
+| `FrameBridge/` | Objective-C++ Unity plugin that hands the OutputRenderTexture to the extension through the sink stream. | not started, blocked on the spike |
+| `InstallerHelper/` | activation / approval flow for the extension inside VRMCast.app. | not started |
 
-- `FrameBridge/` Objective-C++ Unity plugin that hands the OutputRenderTexture to the extension
-  through an IOSurface or shared pixel buffer.
-- `CameraExtension/` Swift Core Media I/O Camera Extension publishing the "VRM Live Camera" device.
-- `InstallerHelper/` activation / approval flow for the extension.
-- Later, optionally, a small NSOpenPanel bridge so the app can use the native file dialog.
+Build the spike with `Scripts/build-camera-spike.sh --install DEVELOPMENT_TEAM=<TeamID>`; the test
+procedure and the design notes are in `Docs/VirtualCamera.md`. The project file is maintained by hand
+and checked by `Scripts/check-xcodeproj.py` (no Xcode required), so it can be reviewed like any other
+source file.
 
-The isolated Camera Extension spike (test pattern, no Unity) comes first; see Docs/VirtualCamera.md.
+No third-party code: only Apple frameworks (SwiftUI, SystemExtensions, CoreMediaIO, CoreVideo).
