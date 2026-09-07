@@ -80,7 +80,9 @@ namespace VRMCast.Core.Tracking
 
         /// <param name="world">33 × (x, y, z) world landmarks, meters.</param>
         /// <param name="visibility">33 visibilities (0..1) or null.</param>
-        public static TrackingFrame Build(double timestamp, float[] world, float[] visibility)
+        /// <param name="normalized">33 × (u, v, z) image-normalized landmarks or null.</param>
+        /// <param name="imageAspect">Image width / height (used with <paramref name="normalized"/>).</param>
+        public static TrackingFrame Build(double timestamp, float[] world, float[] visibility, float[] normalized = null, float imageAspect = 1f)
         {
             var frame = TrackingFrame.Empty(timestamp);
             if (world == null || world.Length < LandmarkCount * 3)
@@ -112,6 +114,17 @@ namespace VRMCast.Core.Tracking
                 pose.RightWristVisibility = visibility[RightWrist];
             }
             pose.Confidence = confidence;
+            if (normalized != null && normalized.Length >= LandmarkCount * 3)
+            {
+                pose.HasImageCoords = true;
+                pose.ImageAspect = imageAspect > 0f ? imageAspect : 1f;
+                pose.LeftShoulderU = normalized[LeftShoulder * 3]; pose.LeftShoulderV = normalized[LeftShoulder * 3 + 1];
+                pose.RightShoulderU = normalized[RightShoulder * 3]; pose.RightShoulderV = normalized[RightShoulder * 3 + 1];
+                pose.LeftElbowU = normalized[LeftElbow * 3]; pose.LeftElbowV = normalized[LeftElbow * 3 + 1];
+                pose.RightElbowU = normalized[RightElbow * 3]; pose.RightElbowV = normalized[RightElbow * 3 + 1];
+                pose.LeftWristU = normalized[LeftWrist * 3]; pose.LeftWristV = normalized[LeftWrist * 3 + 1];
+                pose.RightWristU = normalized[RightWrist * 3]; pose.RightWristV = normalized[RightWrist * 3 + 1];
+            }
             frame.Pose = pose;
             frame.PoseConfidence = confidence;
             return frame;

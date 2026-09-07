@@ -73,6 +73,16 @@ namespace VRMCast.Core.Tracking
         public float LeftWristX, LeftWristY, LeftWristZ, LeftWristVisibility;
         public float RightWristX, RightWristY, RightWristZ, RightWristVisibility;
         public float Confidence;
+
+        /// <summary>
+        /// Normalized image coordinates (u right 0..1, v down 0..1) of the same joints, when the provider supplies
+        /// them; <see cref="ImageAspect"/> is width / height so distances can be measured isotropically.
+        /// </summary>
+        public bool HasImageCoords;
+        public float ImageAspect;
+        public float LeftShoulderU, LeftShoulderV, RightShoulderU, RightShoulderV;
+        public float LeftElbowU, LeftElbowV, RightElbowU, RightElbowV;
+        public float LeftWristU, LeftWristV, RightWristU, RightWristV;
     }
 
     /// <summary>
@@ -84,7 +94,14 @@ namespace VRMCast.Core.Tracking
     {
         /// <summary>Handedness score 0..1.</summary>
         public float Confidence;
-        /// <summary>21 × (x, y, z).</summary>
+        /// <summary>21 × (x, y, z) world landmarks, meters.</summary>
         public float[] LandmarksXyz;
+        /// <summary>Raw MediaPipe handedness label ("Left" == true) before side resolution.</summary>
+        public bool LabelLeft;
+        /// <summary>Normalized image coordinates of the wrist and three palm knuckles (u right, v down).</summary>
+        public float WristU, WristV;
+        public float MiddleMcpU, MiddleMcpV;
+        public float IndexMcpU, IndexMcpV;
+        public float LittleMcpU, LittleMcpV;
     }
 }

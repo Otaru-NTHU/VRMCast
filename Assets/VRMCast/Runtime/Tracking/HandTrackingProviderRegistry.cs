@@ -12,17 +12,14 @@ namespace VRMCast.Tracking
         public TrackingStats Stats { get; }
         public int TargetFps { get; }
         public int MaxInputWidth { get; }
-        /// <summary>Read every frame so a user toggle takes effect without restarting the provider.</summary>
-        public Func<bool> SwapHands { get; }
 
-        public HandProviderContext(CameraCaptureService camera, TextAsset handLandmarkerModel, TrackingStats stats, int targetFps, int maxInputWidth, Func<bool> swapHands)
+        public HandProviderContext(CameraCaptureService camera, TextAsset handLandmarkerModel, TrackingStats stats, int targetFps, int maxInputWidth)
         {
             Camera = camera;
             HandLandmarkerModel = handLandmarkerModel;
             Stats = stats;
             TargetFps = targetFps;
             MaxInputWidth = maxInputWidth;
-            SwapHands = swapHands ?? (() => false);
         }
     }
 

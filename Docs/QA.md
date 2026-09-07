@@ -103,11 +103,15 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
     arm on the *same side of the screen* (its right arm), exactly like a mirror; wave: the forearm follows; point
     at the camera: the arm comes toward the viewer. Lower your arms out of frame: the avatar's arms ease back to
     hanging within a second. Upper Body only: arms stay down. Mirror off: your left hand raises the avatar's left.
-6c. **Fingers.** Body tracking = Upper Body + Arms + Fingers, hands raised in frame with the palms toward the camera:
-    open hand → fingers straight (slightly relaxed); fist → all fingers curl; index only → one finger stays out;
-    thumb across the palm → the thumb folds. Closing your left hand closes the avatar's screen-left hand (mirror).
-    If the wrong hand reacts, tick "Swap left and right hands". Drop the hands out of frame: fingers relax open
-    within half a second. Diagnostics shows Hands ≈ 15 fps.
+6c. **Fingers and hand-anchored arms.** Body tracking = Upper Body + Arms + Fingers, hands raised in frame with the
+    palms toward the camera: open hand → fingers straight (slightly relaxed); fist → all fingers curl; index only →
+    one finger stays out; thumb across the palm → the thumb folds. Closing your left hand closes the avatar's
+    screen-left hand (mirror) and that hand is on the arm that follows your left hand. Move a hand slowly across
+    the frame and toward the camera: the whole arm follows the palm with a natural elbow, and the palm turns with
+    yours (palm to camera → palm to viewer). If the wrong side reacts for both arm and fingers, tick "Swap left and
+    right (arms and fingers)"; arms and fingers must never disagree with each other. Drop the hands out of frame:
+    fingers relax open within half a second and the arms fall back to the pose landmarks, then rest.
+    Diagnostics shows Hands ≈ 15 fps.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
 8. **Performance.** Diagnostics: body ≈ 20 fps, hands ≈ 15 fps, face still ≈ 30 fps, render stays at the target.
 

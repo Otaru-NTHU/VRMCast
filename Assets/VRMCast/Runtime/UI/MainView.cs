@@ -880,7 +880,7 @@ namespace VRMCast.UI
             _bodyMode.SetEnabled(poseOk);
             _bodyHint.text = poseOk ? _loc["body.hint"] : _loc["body.noEngine"];
             _handsSwap.SetValueWithoutNotify(tracking.Hands.SwapHands);
-            _handsSwap.style.display = tracking.Body.HandsEnabled && tracking.HandEngineAvailable ? DisplayStyle.Flex : DisplayStyle.None;
+            _handsSwap.style.display = tracking.Body.ArmsEnabled && poseOk ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void PositionGateMark()

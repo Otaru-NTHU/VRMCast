@@ -61,6 +61,13 @@ namespace VRMCast.Avatar
             SetPoseRotation(HumanBodyBones.RightLowerArm, rightLower);
         }
 
+        /// <summary>Writes local rotations for both hand bones (wrists).</summary>
+        public void ApplyHands(Quaternion leftHand, Quaternion rightHand)
+        {
+            SetPoseRotation(HumanBodyBones.LeftHand, leftHand);
+            SetPoseRotation(HumanBodyBones.RightHand, rightHand);
+        }
+
         /// <summary>True when the chest rotation lands on UpperChest (so the driver knows the parent chain of the arms).</summary>
         public bool HasUpperChest => TryGetPoseBone(HumanBodyBones.UpperChest, out var t) && t != null;
 

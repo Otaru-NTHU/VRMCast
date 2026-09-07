@@ -128,6 +128,53 @@ namespace VRMCast.Tracking
             var rightUpperLocal = inverseParent * Quaternion.FromToRotation(RightArmAxis, rightUpperDir);
             var rightLowerLocal = Quaternion.Inverse(parent * rightUpperLocal) * Quaternion.FromToRotation(RightArmAxis, rightForeDir);
             avatar.ApplyArms(leftUpperLocal, leftLowerLocal, rightUpperLocal, rightLowerLocal);
+
+            // Wrists: orient the hand from the palm axes when the hand landmarker saw it, otherwise keep the rest pose.
+            var leftLowerWorld = parent * leftUpperLocal * leftLowerLocal;
+            var rightLowerWorld = parent * rightUpperLocal * rightLowerLocal;
+            avatar.ApplyHands(
+                HandLocalRotation(leftLowerWorld, LeftArmAxis, arms.HasValue && left.HasHandOrientation, left.HandForward, left.HandNormal),
+                HandLocalRotation(rightLowerWorld, RightArmAxis, arms.HasValue && right.HasHandOrientation, right.HandForward, right.HandNormal));
+        }
+
+        /// <summary>Largest wrist bend (degrees) relative to the forearm; beyond it the hand is eased back.</summary>
+        private const float MaxWristDeg = 85f;
+
+        /// <summary>
+        /// Rotation of the hand bone in its parent's frame so that the fingers point along <paramref name="forward"/>
+        /// and the palm faces <paramref name="normal"/> (avatar space). In the T-pose the fingers continue the arm
+        /// axis and the palm faces down.
+        /// </summary>
+        private static Quaternion HandLocalRotation(Quaternion forearmWorld, Vector3 armAxis, bool hasOrientation, VRMCast.Core.Camera.Float3 forward, VRMCast.Core.Camera.Float3 normal)
+        {
+            if (!hasOrientation) return Quaternion.identity;
+            var f = new Vector3(forward.X, forward.Y, forward.Z);
+            var n = new Vector3(normal.X, normal.Y, normal.Z);
+            if (f.sqrMagnitude < 1e-6f || n.sqrMagnitude < 1e-6f) return Quaternion.identity;
+            // Keep the normal perpendicular to the forward axis so LookRotation gets a clean basis.
+            n -= f.normalized * Vector3.Dot(n, f.normalized);
+            if (n.sqrMagnitude < 1e-6f) return Quaternion.identity;
+            var rest = Quaternion.LookRotation(armAxis, Vector3.down);
+            var target = Quaternion.LookRotation(f.normalized, n.normalized);
+            var world = target * Quaternion.Inverse(rest);
+            var local = Quaternion.Inverse(forearmWorld) * world;
+            var angle = Quaternion.Angle(Quaternion.identity, local);
+            if (angle > MaxWristDeg) local = Quaternion.Slerp(Quaternion.identity, local, MaxWristDeg / angle);
+            return local;
+        }
+
+        /// <summary>Upper arm and forearm lengths of the loaded avatar (meters), from the pose bones.</summary>
+        public bool TryMeasureArm(out float upperArm, out float forearm)
+        {
+            upperArm = forearm = 0f;
+            if (!_avatars.HasAvatar) return false;
+            var avatar = _avatars.Current;
+            if (!avatar.TryGetPoseBone(HumanBodyBones.LeftUpperArm, out var upper) || upper == null) return false;
+            if (!avatar.TryGetPoseBone(HumanBodyBones.LeftLowerArm, out var lower) || lower == null) return false;
+            if (!avatar.TryGetPoseBone(HumanBodyBones.LeftHand, out var hand) || hand == null) return false;
+            upperArm = Vector3.Distance(upper.position, lower.position);
+            forearm = Vector3.Distance(lower.position, hand.position);
+            return upperArm > 0.02f && forearm > 0.02f;
         }
 
         private static Vector3 ToVector(VRMCast.Core.Camera.Float3 v)

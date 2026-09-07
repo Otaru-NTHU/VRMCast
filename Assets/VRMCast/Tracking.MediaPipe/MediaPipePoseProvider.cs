@@ -31,6 +31,7 @@ namespace VRMCast.Tracking.MediaPipe
         private TextureFramePool _pool;
         private RenderTexture _scaled;
         private int _poolWidth, _poolHeight;
+        private volatile float _aspect = 16f / 9f;
         private long _lastTimestampMs = -1;
         private double _lastSubmitSeconds = -1;
 
@@ -145,6 +146,7 @@ namespace VRMCast.Tracking.MediaPipe
             _scaled.Create();
             _poolWidth = width;
             _poolHeight = height;
+            _aspect = height > 0 ? width / (float)height : 1f;
         }
 
         private void ReleaseScaled()
@@ -187,7 +189,22 @@ namespace VRMCast.Tracking.MediaPipe
                     world[i * 3 + 2] = l.z;
                     visibility[i] = l.visibility ?? 1f;
                 }
-                frame = PoseFrameBuilder.Build(seconds, world, visibility);
+                // Image-normalized landmarks let the arm solver anchor the wrist on the hand landmarker's position.
+                float[] normalized = null;
+                if (result.poseLandmarks != null && result.poseLandmarks.Count > 0 && result.poseLandmarks[0].landmarks != null
+                    && result.poseLandmarks[0].landmarks.Count >= PoseFrameBuilder.LandmarkCount)
+                {
+                    var image = result.poseLandmarks[0].landmarks;
+                    normalized = new float[PoseFrameBuilder.LandmarkCount * 3];
+                    for (var i = 0; i < PoseFrameBuilder.LandmarkCount; i++)
+                    {
+                        var l = image[i];
+                        normalized[i * 3] = l.x;
+                        normalized[i * 3 + 1] = l.y;
+                        normalized[i * 3 + 2] = l.z;
+                    }
+                }
+                frame = PoseFrameBuilder.Build(seconds, world, visibility, normalized, _aspect);
             }
 
             _latest.Publish(frame);

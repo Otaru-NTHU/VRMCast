@@ -108,27 +108,43 @@ farther = turn toward the user's left), pitch (shoulders closer to the camera th
 `BodyPoseSolver` applies a dead zone, gain, clamps (25° / 35° / 20°), smoothing and the same mirror rule as the
 head, and glides to neutral when the body is lost. Calibrate also captures the neutral torso (median window).
 
-**Arms** (modes "Upper Body + Arms" and "+ Fingers"): `ArmPoseSolver` (Core) turns shoulder → elbow and
-elbow → wrist world vectors into avatar-space directions, eases them with their own smoothing, and returns an
-arm to the 70° rest pose when its elbow visibility drops below 0.55 (a hidden wrist keeps the arm straight).
+**Arms** (modes "Upper Body + Arms" and "+ Fingers"): `ArmPoseSolver` (Core) produces upper-arm and forearm
+directions in avatar space, smoothed, and returns an arm to the 70° rest pose when nothing tracks it.
+
+- *Hand-anchored (preferred).* Whenever the hand landmarker has seen a hand in the last 0.3 s, its wrist is the
+  target. The wrist's image position and the palm's apparent size, compared with the metric palm size from the
+  hand world landmarks, give the hand's depth under a pinhole model with an assumed 60° horizontal field of view;
+  the shoulders' metric width fixes the shoulder depth the same way. The resulting shoulder→wrist vector is scaled
+  from the user's reach (learned from the pose, default 0.55 m) to the avatar's (bone lengths measured at load)
+  and a two-bone IK places the elbow, using the pose elbow as the bend hint when it is visible and "down, slightly
+  outward and back" otherwise. This is what keeps the arm natural when only the hand is clearly seen.
+- *Pose landmarks (fallback).* Without a hand, the shoulder → elbow and elbow → wrist world vectors are used
+  directly, as before; an elbow visibility below 0.55 rests the arm and a hidden wrist keeps it straight.
+
 Mirror mode makes the avatar the user's reflection: the user's left arm, seen on the left of the screen, drives
 the avatar's *right* arm (the avatar faces the viewer, so its right side is screen-left) and image-right maps
 to the avatar's +X. Copy mode (mirror off) drives left with left and flips the sign. `AvatarDriver` converts
-the directions into local bone rotations with `FromToRotation` under the spine/chest chain, so the arms
-follow the torso.
+the directions into local bone rotations with `FromToRotation` under the spine/chest chain, so the arms follow
+the torso, and orients each hand bone from the palm axes (fingers direction and palm normal, wrist bend capped
+at 85°) when the hand landmarker saw the hand.
+
+**Which hand is which.** The pose labels the user's left and right for an unmirrored camera picture, and the
+solver trusts those labels. Each hand detection is matched to the nearest visible pose wrist in the image
+(`HandFrameBuilder.ResolveSides`), so the fingers always belong to the arm the pose drives; only when no pose
+wrist is near does MediaPipe's handedness label decide (it assumes a mirrored selfie image, so "Left" means the
+real right hand on an unmirrored feed). A camera that delivers a mirrored picture flips every label the same
+way and nothing in the geometry can tell: the BODY section's "Swap left and right (arms and fingers)" toggle
+undoes that for both at once.
 
 **Fingers** (mode "Upper Body + Arms + Fingers", default): `MediaPipeHandProvider` runs the Hand Landmarker
-(`hand_landmarker.bytes`, up to two hands, CPU, 15 fps, 640 px input) and publishes 21 world landmarks per
-hand. MediaPipe labels handedness for a mirrored selfie image, and the app feeds the camera unmirrored, so
-`HandFrameBuilder.IsUserLeft` swaps the labels; the BODY section's "Swap left and right hands" toggle flips
-them again for cameras that deliver a mirrored picture. `FingerCurl` (Core) sums the bend angles at the MCP,
-PIP and DIP joints (thumb: MCP + IP) and maps 25°–195° to a curl of 0..1 (thumb 15°–100°), which does not
-depend on the hand's orientation. `FingerCurlSolver` smooths per hand, assigns hands with the same mirror rule
-as the arms, and relaxes a hand to a 0.1 curl 0.4 s after it disappears. `AvatarDriver.OnAvatarLoaded`
-captures, in the import T-pose (palms down), each phalanx's rest rotation and the local axis that swings the
-finger toward the palm (the thumb also toward the little finger); at runtime each of the 15 bones per hand
-rotates about that axis by curl × (70° / 90° / 60°) for fingers and (20° / 40° / 55°) for the thumb. Finger
-spread and wrist rotation are not tracked.
+(`hand_landmarker.bytes`, up to two hands, CPU, 15 fps, 640 px input) and publishes 21 world landmarks plus the
+wrist and palm-knuckle image positions per hand. `FingerCurl` (Core) sums the bend angles at the MCP, PIP and
+DIP joints (thumb: MCP + IP) and maps 25°–195° to a curl of 0..1 (thumb 15°–100°), which does not depend on the
+hand's orientation. `FingerCurlSolver` smooths per hand, assigns hands with the same mirror rule as the arms, and
+relaxes a hand to a 0.1 curl 0.4 s after it disappears. `AvatarDriver.OnAvatarLoaded` captures, in the import
+T-pose (palms down), each phalanx's rest rotation and the local axis that swings the finger toward the palm (the
+thumb also toward the little finger); at runtime each of the 15 bones per hand rotates about that axis by
+curl × (70° / 90° / 60°) for fingers and (20° / 40° / 55°) for the thumb. Finger spread is not tracked.
 
 `AvatarDriver` applies the torso rotation half to Spine and half to Chest and subtracts it from the head chain,
 because the head angles are camera-relative. Body tracking is on by default (PRD 34 `body_mode: upper_body`, extended
@@ -137,5 +153,5 @@ section is disabled.
 
 ## Not in MVP-C
 
-The expression mapping editor UI, vowel classification from audio (A/I/U/E/O), finger spread and wrist
-rotation, full body, external providers (VMC/OSC/ARKit).
+The expression mapping editor UI, vowel classification from audio (A/I/U/E/O), finger spread, full body,
+external providers (VMC/OSC/ARKit).

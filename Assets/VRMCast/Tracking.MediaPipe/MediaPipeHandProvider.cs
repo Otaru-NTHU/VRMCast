@@ -13,9 +13,9 @@ using Debug = UnityEngine.Debug;
 namespace VRMCast.Tracking.MediaPipe
 {
     /// <summary>
-    /// MediaPipe Hand Landmarker (CPU, LIVE_STREAM, up to two hands) at its own cadence. Only world landmarks and the
-    /// handedness score are copied out on the worker thread; handedness labels are resolved to the user's sides with
-    /// <see cref="HandFrameBuilder.IsUserLeft"/> because the model assumes a mirrored selfie image.
+    /// MediaPipe Hand Landmarker (CPU, LIVE_STREAM, up to two hands) at its own cadence. World landmarks, the raw
+    /// handedness label and the wrist / palm image positions are copied out on the worker thread; which real hand
+    /// each detection is gets decided later against the pose wrists (<see cref="HandFrameBuilder.ResolveSides"/>).
     /// </summary>
     public sealed class MediaPipeHandProvider : IUnityHandTrackingProvider
     {
@@ -34,7 +34,6 @@ namespace VRMCast.Tracking.MediaPipe
         private int _poolWidth, _poolHeight;
         private long _lastTimestampMs = -1;
         private double _lastSubmitSeconds = -1;
-        private volatile bool _swapHands;
 
         public MediaPipeHandProvider(HandProviderContext ctx)
         {
@@ -92,7 +91,6 @@ namespace VRMCast.Tracking.MediaPipe
         public void Tick()
         {
             if (!IsRunning || _landmarker == null) return;
-            _swapHands = _ctx.SwapHands();
             var tex = _ctx.Camera.Texture;
             if (tex == null || !_ctx.Camera.HasFreshFrame) return;
 
@@ -164,24 +162,22 @@ namespace VRMCast.Tracking.MediaPipe
             }
 
             var seconds = timestampMs / 1000.0;
-            float[] leftWorld = null, rightWorld = null;
-            float leftScore = 0f, rightScore = 0f;
+            HandTracking? first = null, second = null;
             var count = result.handWorldLandmarks != null ? result.handWorldLandmarks.Count : 0;
-            for (var h = 0; h < count; h++)
+            for (var h = 0; h < count && h < 2; h++)
             {
                 var landmarks = result.handWorldLandmarks[h].landmarks;
                 if (landmarks == null || landmarks.Count < HandFrameBuilder.LandmarkCount) continue;
 
-                var label = "Left";
+                var labelLeft = true;
                 var score = 1f;
                 if (result.handedness != null && h < result.handedness.Count && result.handedness[h].categories != null
                     && result.handedness[h].categories.Count > 0)
                 {
                     var top = result.handedness[h].categories[0];
-                    label = top.categoryName;
+                    labelLeft = string.Equals(top.categoryName, "Left", StringComparison.OrdinalIgnoreCase);
                     score = top.score;
                 }
-                var userLeft = HandFrameBuilder.IsUserLeft(label, imageIsMirrored: false, swap: _swapHands);
 
                 var world = new float[HandFrameBuilder.LandmarkCount * 3];
                 for (var i = 0; i < HandFrameBuilder.LandmarkCount; i++)
@@ -191,14 +187,22 @@ namespace VRMCast.Tracking.MediaPipe
                     world[i * 3 + 1] = l.y;
                     world[i * 3 + 2] = l.z;
                 }
-                // Two detections with the same label: keep the more confident one.
-                if (userLeft) { if (leftWorld == null || score > leftScore) { leftWorld = world; leftScore = score; } }
-                else if (rightWorld == null || score > rightScore) { rightWorld = world; rightScore = score; }
+                var hand = new HandTracking { Confidence = score, LandmarksXyz = world, LabelLeft = labelLeft };
+                if (result.handLandmarks != null && h < result.handLandmarks.Count && result.handLandmarks[h].landmarks != null
+                    && result.handLandmarks[h].landmarks.Count >= HandFrameBuilder.LandmarkCount)
+                {
+                    var image = result.handLandmarks[h].landmarks;
+                    hand.WristU = image[HandFrameBuilder.Wrist].x; hand.WristV = image[HandFrameBuilder.Wrist].y;
+                    hand.MiddleMcpU = image[HandFrameBuilder.MiddleMcp].x; hand.MiddleMcpV = image[HandFrameBuilder.MiddleMcp].y;
+                    hand.IndexMcpU = image[HandFrameBuilder.IndexMcp].x; hand.IndexMcpV = image[HandFrameBuilder.IndexMcp].y;
+                    hand.LittleMcpU = image[HandFrameBuilder.LittleMcp].x; hand.LittleMcpV = image[HandFrameBuilder.LittleMcp].y;
+                }
+                if (first == null) first = hand; else second = hand;
             }
 
-            var frame = HandFrameBuilder.Build(seconds, leftWorld, leftScore, rightWorld, rightScore);
+            var frame = HandFrameBuilder.Build(seconds, first, second);
             _latest.Publish(frame);
-            _ctx.Stats.OnResult(now, Math.Max(0, now - submitted), leftWorld != null || rightWorld != null);
+            _ctx.Stats.OnResult(now, Math.Max(0, now - submitted), first != null);
         }
 
         public void Dispose() => Stop();

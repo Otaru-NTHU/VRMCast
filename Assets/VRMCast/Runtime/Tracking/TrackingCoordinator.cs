@@ -91,7 +91,12 @@ namespace VRMCast.Tracking
 
             Camera.StateChanged += _ => RefreshStatus();
             Microphone.StateChanged += _ => SettingsChanged?.Invoke();
-            _avatars.AvatarLoaded += _ => { _driver.OnAvatarLoaded(); _driver.ApplyRest(); };
+            _avatars.AvatarLoaded += _ =>
+            {
+                _driver.OnAvatarLoaded();
+                if (_driver.TryMeasureArm(out var upper, out var fore)) ArmSolver.SetAvatarArm(upper, fore);
+                _driver.ApplyRest();
+            };
         }
 
         public void SetLipSyncMode(LipSyncMode mode)
@@ -157,7 +162,7 @@ namespace VRMCast.Tracking
                 try
                 {
                     _handProvider = HandTrackingProviderRegistry.CreateDefault(
-                        new HandProviderContext(Camera, _handModel, HandStats, DefaultHandFps, DefaultHandInputWidth, () => Hands.SwapHands));
+                        new HandProviderContext(Camera, _handModel, HandStats, DefaultHandFps, DefaultHandInputWidth));
                     _handProvider?.Start();
                     HandStats.Reset();
                     _lastHandSequence = 0;
@@ -313,14 +318,17 @@ namespace VRMCast.Tracking
                 if (sequence != _lastHandSequence)
                 {
                     _lastHandSequence = sequence;
+                    // Decide which real hand each detection is against the pose wrists, so fingers and arms agree.
+                    HandFrameBuilder.ResolveSides(ref handFrame, _latestPoseFrame.Pose, imageMirrored: false, swap: Hands.SwapHands);
                     FingerSolver.Submit(handFrame, now, Settings.MirrorUser);
+                    ArmSolver.SubmitHands(handFrame, now);
                 }
             }
 
             var pose = Solver.Update(dt, now);
             HybridLipSolver.Apply(pose.Expressions, LipSync, pose.Confidence, Microphone.Meter.Envelope, Microphone.Meter.IsOpen, Microphone.IsRunning);
             var body = BodySolver.Update(dt, now, Settings.MirrorUser);
-            var arms = ArmSolver.Update(_latestPoseFrame, BodySolver.IsTracking, dt, Settings.MirrorUser);
+            var arms = ArmSolver.Update(_latestPoseFrame, BodySolver.IsTracking, now, dt, Settings.MirrorUser, Hands.SwapHands);
             var hands = FingerSolver.Update(dt, now, _handProvider != null && Body.HandsEnabled);
             _driver.Apply(pose, body, arms, hands);
             RefreshStatus();

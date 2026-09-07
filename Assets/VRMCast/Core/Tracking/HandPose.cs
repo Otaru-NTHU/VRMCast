@@ -25,9 +25,8 @@ namespace VRMCast.Core.Tracking
         /// <summary>Relaxed hand: slightly curled fingers look more natural than a flat hand.</summary>
         public float RestCurl { get; set; } = 0.1f;
         /// <summary>
-        /// MediaPipe labels handedness for a mirrored (selfie) image, so on the app's unmirrored camera feed the labels
-        /// are already swapped once by <see cref="HandFrameBuilder.IsUserLeft"/>. This flips them again for cameras or
-        /// virtual cameras that deliver a mirrored picture.
+        /// Swaps left and right for arms and fingers together. Needed when the camera delivers a mirrored picture:
+        /// every landmark label is then flipped the same way, which the solvers cannot tell from geometry.
         /// </summary>
         public bool SwapHands { get; set; }
 
@@ -90,24 +89,128 @@ namespace VRMCast.Core.Tracking
         public static bool IsUserLeft(string mediaPipeLabel, bool imageIsMirrored, bool swap = false)
         {
             var labelLeft = string.Equals(mediaPipeLabel, "Left", StringComparison.OrdinalIgnoreCase);
+            return IsUserLeft(labelLeft, imageIsMirrored, swap);
+        }
+
+        public static bool IsUserLeft(bool labelLeft, bool imageIsMirrored, bool swap = false)
+        {
             var userLeft = imageIsMirrored ? labelLeft : !labelLeft;
             return swap ? !userLeft : userLeft;
         }
 
-        /// <param name="leftWorld">21 × (x, y, z) world landmarks of the user's left hand, or null.</param>
-        /// <param name="rightWorld">Same for the user's right hand, or null.</param>
+        /// <summary>
+        /// Packs up to two raw detections (labels unresolved) into a frame. Call <see cref="ResolveSides"/> before the
+        /// frame reaches a solver; until then <c>LeftHand</c>/<c>RightHand</c> only reflect the raw labels.
+        /// </summary>
+        public static TrackingFrame Build(double timestamp, HandTracking? first, HandTracking? second)
+        {
+            var frame = TrackingFrame.Empty(timestamp);
+            Place(ref frame, first);
+            Place(ref frame, second);
+            return frame;
+        }
+
+        private static void Place(ref TrackingFrame frame, HandTracking? hand)
+        {
+            if (!hand.HasValue || hand.Value.LandmarksXyz == null || hand.Value.LandmarksXyz.Length < LandmarkCount * 3) return;
+            var h = hand.Value;
+            if (h.LabelLeft)
+            {
+                if (!frame.LeftHand.HasValue || frame.LeftHand.Value.Confidence < h.Confidence) frame.LeftHand = h;
+                else if (!frame.RightHand.HasValue) frame.RightHand = h;
+            }
+            else
+            {
+                if (!frame.RightHand.HasValue || frame.RightHand.Value.Confidence < h.Confidence) frame.RightHand = h;
+                else if (!frame.LeftHand.HasValue) frame.LeftHand = h;
+            }
+        }
+
+        /// <summary>Convenience for tests and simple providers: builds a frame whose sides are already the user's.</summary>
         public static TrackingFrame Build(double timestamp, float[] leftWorld, float leftScore, float[] rightWorld, float rightScore)
         {
             var frame = TrackingFrame.Empty(timestamp);
             if (leftWorld != null && leftWorld.Length >= LandmarkCount * 3)
             {
-                frame.LeftHand = new HandTracking { Confidence = leftScore, LandmarksXyz = leftWorld };
+                frame.LeftHand = new HandTracking { Confidence = leftScore, LandmarksXyz = leftWorld, LabelLeft = true };
             }
             if (rightWorld != null && rightWorld.Length >= LandmarkCount * 3)
             {
-                frame.RightHand = new HandTracking { Confidence = rightScore, LandmarksXyz = rightWorld };
+                frame.RightHand = new HandTracking { Confidence = rightScore, LandmarksXyz = rightWorld, LabelLeft = false };
             }
             return frame;
+        }
+
+        /// <summary>Normalized distance at which a hand is matched to a pose wrist (width-normalized image units).</summary>
+        public const float WristMatchDistance = 0.12f;
+
+        /// <summary>
+        /// Assigns the detected hands to the user's left/right so that fingers always belong to the arm the pose drives.
+        /// When the pose gives wrist image positions, each hand goes to the nearest visible pose wrist; otherwise the
+        /// handedness label is used (<paramref name="imageMirrored"/> says which way MediaPipe's label convention
+        /// applies). <paramref name="swap"/> flips the final result.
+        /// </summary>
+        public static void ResolveSides(ref TrackingFrame hands, PoseTracking? pose, bool imageMirrored, bool swap)
+        {
+            var a = hands.LeftHand;
+            var b = hands.RightHand;
+            hands.LeftHand = null;
+            hands.RightHand = null;
+
+            var havePose = pose.HasValue && pose.Value.HasImageCoords;
+            float realLeftU = 0, realLeftV = 0, realRightU = 0, realRightV = 0, realLeftVis = 0, realRightVis = 0, aspect = 1f;
+            if (havePose)
+            {
+                var p = pose.Value;
+                aspect = p.ImageAspect > 0f ? p.ImageAspect : 1f;
+                realLeftU = p.LeftWristU; realLeftV = p.LeftWristV; realLeftVis = p.LeftWristVisibility;
+                realRightU = p.RightWristU; realRightV = p.RightWristV; realRightVis = p.RightWristVisibility;
+            }
+
+            bool? Side(HandTracking? hand)
+            {
+                if (!hand.HasValue) return null;
+                var h = hand.Value;
+                if (havePose)
+                {
+                    var dl = realLeftVis >= 0.3f ? Dist(h.WristU, h.WristV, realLeftU, realLeftV, aspect) : float.MaxValue;
+                    var dr = realRightVis >= 0.3f ? Dist(h.WristU, h.WristV, realRightU, realRightV, aspect) : float.MaxValue;
+                    if (Math.Min(dl, dr) <= WristMatchDistance) return dl <= dr;
+                }
+                return IsUserLeft(h.LabelLeft, imageMirrored, false);
+            }
+
+            var sideA = Side(a);
+            var sideB = Side(b);
+            if (sideA.HasValue && sideB.HasValue && sideA.Value == sideB.Value)
+            {
+                // Both claim the same side: the one nearer that pose wrist keeps it, the other takes the free side.
+                var ha = a.Value; var hb = b.Value;
+                var target = sideA.Value;
+                var tu = target ? realLeftU : realRightU;
+                var tv = target ? realLeftV : realRightV;
+                var keepA = !havePose ? ha.Confidence >= hb.Confidence : Dist(ha.WristU, ha.WristV, tu, tv, aspect) <= Dist(hb.WristU, hb.WristV, tu, tv, aspect);
+                if (keepA) sideB = !target; else sideA = !target;
+            }
+
+            HandTracking? left = null, right = null;
+            void Put(HandTracking? hand, bool? side)
+            {
+                if (!hand.HasValue || !side.HasValue) return;
+                var isLeft = swap ? !side.Value : side.Value;
+                if (isLeft) left = hand; else right = hand;
+            }
+            Put(a, sideA);
+            Put(b, sideB);
+            hands.LeftHand = left;
+            hands.RightHand = right;
+        }
+
+        private static float Dist(float u0, float v0, float u1, float v1, float aspect)
+        {
+            var du = u0 - u1;
+            var dv = (v0 - v1) / aspect;
+            return (float)Math.Sqrt(du * du + dv * dv);
         }
 
         public static TrackingFrame NoHands(double timestamp) => TrackingFrame.Empty(timestamp);
