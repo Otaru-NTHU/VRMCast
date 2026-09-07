@@ -85,15 +85,25 @@ namespace VRMCast.App
             var diagnostics = new DiagnosticsService(render, avatars, background, camera, outputs);
 
             _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics);
-
-            if (_uiDocument != null)
-            {
-                _view = new MainView(_uiDocument.rootVisualElement, _services);
-            }
         }
 
         private void Start()
         {
+            // UIDocument creates its root visual element in OnEnable, which runs after every Awake; this
+            // bootstrap runs first (DefaultExecutionOrder), so the UI can only be bound from Start.
+            if (_uiDocument != null)
+            {
+                var root = _uiDocument.rootVisualElement;
+                if (root == null)
+                {
+                    Debug.LogError("AppBootstrap: UIDocument has no root visual element. Check its Panel Settings and Source Asset, or run 'VRMCast > Setup > Rebuild Main Scene'.");
+                }
+                else
+                {
+                    _view = new MainView(root, _services);
+                }
+            }
+
             _services.Camera.Reframe();
             _services.Camera.Apply(force: true);
 
