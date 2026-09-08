@@ -85,10 +85,6 @@ namespace VRMCast.UI
         private readonly Label _trackSmoothingValue;
         private readonly Slider _trackGain;
         private readonly Label _trackGainValue;
-        private readonly Toggle _invertPitch;
-        private readonly Toggle _invertYaw;
-        private readonly Toggle _invertRoll;
-        private readonly Toggle _swapEyes;
         private readonly VisualElement _cameraPreviewBox;
         private readonly List<Label> _trackMarkers = new List<Label>();
         private readonly Label _diagTracking;
@@ -110,12 +106,9 @@ namespace VRMCast.UI
         private readonly Label _micGateValue;
         private readonly DropdownField _bodyMode;
         private readonly Label _bodyHint;
-        private readonly Toggle _handsSwap;
         private readonly Label _diagHands;
         private readonly Label _handsState;
-        private readonly Toggle _bodyInvertRoll, _bodyInvertYaw, _bodyInvertPitch;
         private readonly Toggle _armsFromHands, _wristFromPalm;
-        private readonly Toggle _bodySwapSides;
         private readonly Label _diagPose;
         private readonly Label _statusAudio;
         private static readonly LipSyncMode[] LipSyncOrder = { LipSyncMode.Camera, LipSyncMode.Microphone, LipSyncMode.Hybrid };
@@ -204,10 +197,6 @@ namespace VRMCast.UI
             _trackSmoothingValue = Q<Label>("track-smoothing-value");
             _trackGain = Q<Slider>("track-gain");
             _trackGainValue = Q<Label>("track-gain-value");
-            _invertPitch = Q<Toggle>("invert-pitch");
-            _invertYaw = Q<Toggle>("invert-yaw");
-            _invertRoll = Q<Toggle>("invert-roll");
-            _swapEyes = Q<Toggle>("swap-eyes");
             _cameraPreviewBox = Q<VisualElement>("camera-preview-box");
             _diagTracking = Q<Label>("diag-tracking");
             _statusFace = Q<Label>("status-face");
@@ -224,14 +213,9 @@ namespace VRMCast.UI
             _micGateValue = Q<Label>("mic-gate-value");
             _bodyMode = Q<DropdownField>("body-mode");
             _bodyHint = Q<Label>("body-hint");
-            _handsSwap = Q<Toggle>("hands-swap");
             _diagHands = Q<Label>("diag-hands");
             _handsState = Q<Label>("hands-state");
-            _bodyInvertRoll = Q<Toggle>("body-invert-roll");
-            _bodyInvertYaw = Q<Toggle>("body-invert-yaw");
-            _bodyInvertPitch = Q<Toggle>("body-invert-pitch");
             _armsFromHands = Q<Toggle>("arms-from-hands");
-            _bodySwapSides = Q<Toggle>("body-swap-sides");
             _wristFromPalm = Q<Toggle>("wrist-from-palm");
             _diagPose = Q<Label>("diag-pose");
             _statusAudio = Q<Label>("status-audio");
@@ -489,10 +473,6 @@ namespace VRMCast.UI
             _mirrorUser.label = _loc["tracking.mirrorUser"];
             _trackSmoothing.label = _loc["tracking.smoothing"];
             _trackGain.label = _loc["tracking.headGain"];
-            _invertPitch.label = _loc["tracking.invertPitch"];
-            _invertYaw.label = _loc["tracking.invertYaw"];
-            _invertRoll.label = _loc["tracking.invertRoll"];
-            _swapEyes.label = _loc["tracking.swapEyes"];
             Q<Button>("clear-calibration").text = _loc["tracking.clearCalibration"];
 
             Q<Label>("section-lipsync").text = _loc["section.lipsync"];
@@ -505,12 +485,7 @@ namespace VRMCast.UI
             Q<Label>("section-body").text = _loc["section.body"];
             _bodyMode.label = _loc["body.mode"];
             RebuildChoices(_bodyMode, Localized(BodyKeys));
-            _handsSwap.label = _loc["hands.swap"];
-            _bodyInvertRoll.label = _loc["body.invertRoll"];
-            _bodyInvertYaw.label = _loc["body.invertYaw"];
-            _bodyInvertPitch.label = _loc["body.invertPitch"];
             _armsFromHands.label = _loc["body.armsFromHands"];
-            _bodySwapSides.label = _loc["body.swapSides"];
             _wristFromPalm.label = _loc["body.wristFromPalm"];
 
             Q<Label>("section-framing").text = _loc["section.framing"];
@@ -735,12 +710,7 @@ namespace VRMCast.UI
                 tracking.SetMode(TrackingModeOrder[ChoiceIndex(_trackingMode, evt.newValue)]);
             });
             _mirrorUser.RegisterValueChangedCallback(evt => { tracking.Settings.MirrorUser = evt.newValue; tracking.NotifySettingsChanged(); });
-            _handsSwap.RegisterValueChangedCallback(evt => { tracking.Hands.SwapHands = evt.newValue; tracking.NotifySettingsChanged(); });
-            _bodyInvertRoll.RegisterValueChangedCallback(evt => { tracking.Body.InvertRoll = evt.newValue; tracking.NotifySettingsChanged(); });
-            _bodyInvertYaw.RegisterValueChangedCallback(evt => { tracking.Body.InvertYaw = evt.newValue; tracking.NotifySettingsChanged(); });
-            _bodyInvertPitch.RegisterValueChangedCallback(evt => { tracking.Body.InvertPitch = evt.newValue; tracking.NotifySettingsChanged(); });
             _armsFromHands.RegisterValueChangedCallback(evt => { tracking.Body.ArmsFromHands = evt.newValue; tracking.NotifySettingsChanged(); });
-            _bodySwapSides.RegisterValueChangedCallback(evt => { tracking.Body.SwapSides = evt.newValue; tracking.NotifySettingsChanged(); });
             _wristFromPalm.RegisterValueChangedCallback(evt => { tracking.Body.WristFromPalm = evt.newValue; tracking.NotifySettingsChanged(); });
             _trackSmoothing.RegisterValueChangedCallback(evt =>
             {
@@ -762,10 +732,6 @@ namespace VRMCast.UI
                 _trackBlinkValue.text = $"{evt.newValue:0.0}×";
                 tracking.NotifySettingsChanged();
             });
-            _invertPitch.RegisterValueChangedCallback(evt => { tracking.Settings.InvertPitch = evt.newValue; tracking.NotifySettingsChanged(); });
-            _invertYaw.RegisterValueChangedCallback(evt => { tracking.Settings.InvertYaw = evt.newValue; tracking.NotifySettingsChanged(); });
-            _invertRoll.RegisterValueChangedCallback(evt => { tracking.Settings.InvertRoll = evt.newValue; tracking.NotifySettingsChanged(); });
-            _swapEyes.RegisterValueChangedCallback(evt => { tracking.Settings.SwapEyes = evt.newValue; tracking.NotifySettingsChanged(); });
             Q<Button>("clear-calibration").clicked += () =>
             {
                 tracking.ClearCalibration();
@@ -821,10 +787,6 @@ namespace VRMCast.UI
             _trackGainValue.text = $"{settings.HeadGain:0.0}×";
             _trackBlink.SetValueWithoutNotify(settings.BlinkGain);
             _trackBlinkValue.text = $"{settings.BlinkGain:0.0}×";
-            _invertPitch.SetValueWithoutNotify(settings.InvertPitch);
-            _invertYaw.SetValueWithoutNotify(settings.InvertYaw);
-            _invertRoll.SetValueWithoutNotify(settings.InvertRoll);
-            _swapEyes.SetValueWithoutNotify(settings.SwapEyes);
 
             _statusFace.text = _loc[tracking.CurrentStatus == TrackingCoordinator.Status.Tracking ? "status.faceOn"
                 : tracking.Enabled ? "status.faceSearching" : "status.faceOff"];
@@ -922,22 +884,12 @@ namespace VRMCast.UI
             var poseOk = tracking.PoseEngineAvailable;
             _bodyMode.SetEnabled(poseOk);
             _bodyHint.text = poseOk ? _loc["body.hint"] : _loc["body.noEngine"];
-            _handsSwap.SetValueWithoutNotify(tracking.Hands.SwapHands);
-            _handsSwap.style.display = tracking.Body.ArmsEnabled && poseOk ? DisplayStyle.Flex : DisplayStyle.None;
-            _bodyInvertRoll.SetValueWithoutNotify(tracking.Body.InvertRoll);
-            _bodyInvertYaw.SetValueWithoutNotify(tracking.Body.InvertYaw);
-            _bodyInvertPitch.SetValueWithoutNotify(tracking.Body.InvertPitch);
             _armsFromHands.SetValueWithoutNotify(tracking.Body.ArmsFromHands);
-            _bodySwapSides.SetValueWithoutNotify(tracking.Body.SwapSides);
             _wristFromPalm.SetValueWithoutNotify(tracking.Body.WristFromPalm);
             var handsOn = tracking.Body.HandsEnabled && tracking.HandEngineAvailable;
             _armsFromHands.style.display = handsOn ? DisplayStyle.Flex : DisplayStyle.None;
             _wristFromPalm.style.display = handsOn ? DisplayStyle.Flex : DisplayStyle.None;
             var bodyOn = tracking.Body.Mode != BodyTrackingMode.Off && poseOk;
-            _bodyInvertRoll.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
-            _bodyInvertYaw.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
-            _bodyInvertPitch.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
-            _bodySwapSides.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
             RefreshHandsState();
         }
 

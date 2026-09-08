@@ -12,14 +12,21 @@ namespace VRMCast.Tracking
         public TrackingStats Stats { get; }
         public int TargetFps { get; }
         public int MaxInputWidth { get; }
+        /// <summary>Holistic model (pose + hands in one), used by the holistic provider only.</summary>
+        public TextAsset HolisticLandmarkerModel { get; }
+        /// <summary>Optional second stats sink for the hands when one provider delivers both.</summary>
+        public TrackingStats HandStats { get; }
 
-        public PoseProviderContext(CameraCaptureService camera, TextAsset poseLandmarkerModel, TrackingStats stats, int targetFps, int maxInputWidth)
+        public PoseProviderContext(CameraCaptureService camera, TextAsset poseLandmarkerModel, TrackingStats stats, int targetFps, int maxInputWidth,
+            TextAsset holisticLandmarkerModel = null, TrackingStats handStats = null)
         {
             Camera = camera;
             PoseLandmarkerModel = poseLandmarkerModel;
             Stats = stats;
             TargetFps = targetFps;
             MaxInputWidth = maxInputWidth;
+            HolisticLandmarkerModel = holisticLandmarkerModel;
+            HandStats = handStats;
         }
     }
 
@@ -49,7 +56,23 @@ namespace VRMCast.Tracking
 
         public static IUnityPoseTrackingProvider CreateDefault(PoseProviderContext context)
         {
+            // Prefer the plain pose landmarker as the default; the holistic one is chosen explicitly by name.
+            foreach (var f in Factories) if (f.name != HolisticName) return f.factory(context);
             return Factories.Count == 0 ? null : Factories[0].factory(context);
+        }
+
+        public const string HolisticName = "MediaPipe Holistic Landmarker";
+
+        public static bool Has(string name)
+        {
+            foreach (var f in Factories) if (f.name == name) return true;
+            return false;
+        }
+
+        public static IUnityPoseTrackingProvider Create(string name, PoseProviderContext context)
+        {
+            foreach (var f in Factories) if (f.name == name) return f.factory(context);
+            return null;
         }
     }
 }

@@ -28,6 +28,8 @@ namespace VRMCast.Tracking
         private readonly TextAsset _model;
         private readonly TextAsset _poseModel;
         private readonly TextAsset _handModel;
+        private readonly TextAsset _holisticModel;
+        private bool _poseProviderIsHolistic;
         private readonly AvatarDriver _driver;
         private IUnityPoseTrackingProvider _poseProvider;
         private long _lastPoseSequence;
@@ -55,8 +57,10 @@ namespace VRMCast.Tracking
         public FingerCurlSolver FingerSolver { get; }
         private TrackingFrame _latestPoseFrame;
         public bool PoseEngineAvailable => PoseTrackingProviderRegistry.HasProviders && _poseModel != null;
-        public bool HandEngineAvailable => HandTrackingProviderRegistry.HasProviders && _handModel != null;
-        public bool HandProviderRunning => _handProvider != null && _handProvider.IsRunning;
+        /// <summary>Pose and hands from one model (hands anchored on the pose wrists): preferred whenever its model is present.</summary>
+        public bool HolisticAvailable => _holisticModel != null && PoseTrackingProviderRegistry.Has(PoseTrackingProviderRegistry.HolisticName);
+        public bool HandEngineAvailable => HolisticAvailable || (HandTrackingProviderRegistry.HasProviders && _handModel != null);
+        public bool HandProviderRunning => (_poseProviderIsHolistic && _poseProvider != null && _poseProvider.IsRunning) || (_handProvider != null && _handProvider.IsRunning);
         public int FingerRigBones => _driver.FingerRigBoneCount;
         public TrackingFrame LatestPoseFrame => _latestPoseFrame;
         /// <summary>Last hand frame after side resolution (raw labels still inside each hand).</summary>
@@ -70,9 +74,9 @@ namespace VRMCast.Tracking
             {
                 if (!Enabled) return "hands.state.off";
                 if (!Body.HandsEnabled) return "hands.state.modeOff";
-                if (!HandTrackingProviderRegistry.HasProviders) return "hands.state.noEngine";
-                if (_handModel == null) return "hands.state.noModel";
-                if (_handProvider == null || !_handProvider.IsRunning) return "hands.state.starting";
+                if (!HandTrackingProviderRegistry.HasProviders && !PoseTrackingProviderRegistry.Has(PoseTrackingProviderRegistry.HolisticName)) return "hands.state.noEngine";
+                if (_handModel == null && _holisticModel == null) return "hands.state.noModel";
+                if (!HandProviderRunning) return "hands.state.starting";
                 if (FingerRigBones == 0) return _avatars.HasAvatar ? "hands.state.noFingerBones" : "hands.state.noAvatar";
                 var l = FingerSolver.Pose.Left.Tracked; var r = FingerSolver.Pose.Right.Tracked;
                 if (l && r) return "hands.state.both";
@@ -96,7 +100,7 @@ namespace VRMCast.Tracking
         public TrackingCoordinator(MonoBehaviour host, IAvatarService avatars, CameraCaptureService camera, TextAsset faceLandmarkerModel,
             FaceTrackingSettings settings = null, TextAsset poseLandmarkerModel = null, LipSyncSettings lipSync = null,
             BodyTrackingSettings body = null, MicrophoneCaptureService microphone = null,
-            TextAsset handLandmarkerModel = null, HandTrackingSettings hands = null)
+            TextAsset handLandmarkerModel = null, HandTrackingSettings hands = null, TextAsset holisticLandmarkerModel = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _avatars = avatars ?? throw new ArgumentNullException(nameof(avatars));
@@ -104,6 +108,7 @@ namespace VRMCast.Tracking
             _model = faceLandmarkerModel;
             _poseModel = poseLandmarkerModel;
             _handModel = handLandmarkerModel;
+            _holisticModel = holisticLandmarkerModel;
             Settings = settings ?? new FaceTrackingSettings();
             Hands = hands ?? new HandTrackingSettings();
             LipSync = lipSync ?? new LipSyncSettings();
@@ -153,36 +158,49 @@ namespace VRMCast.Tracking
         private void SyncPoseProvider()
         {
             var wanted = Enabled && Body.Mode != BodyTrackingMode.Off && PoseEngineAvailable;
+            var wantHolistic = wanted && Body.HandsEnabled && HolisticAvailable;
+            if (_poseProvider != null && (!wanted || _poseProviderIsHolistic != wantHolistic))
+            {
+                try { _poseProvider.Stop(); _poseProvider.Dispose(); }
+                catch (Exception e) { Debug.LogException(e); }
+                _poseProvider = null;
+                _poseProviderIsHolistic = false;
+                BodySolver.Reset();
+                ArmSolver.Reset();
+                FingerSolver.Reset();
+                _latestPoseFrame = default;
+                _latestHandFrame = default;
+            }
             if (wanted && _poseProvider == null)
             {
                 try
                 {
-                    _poseProvider = PoseTrackingProviderRegistry.CreateDefault(new PoseProviderContext(Camera, _poseModel, PoseStats, DefaultPoseFps, DefaultPoseInputWidth));
+                    var ctx = new PoseProviderContext(Camera, _poseModel, PoseStats, wantHolistic ? DefaultHandFps : DefaultPoseFps,
+                        wantHolistic ? DefaultHandInputWidth : DefaultPoseInputWidth, _holisticModel, wantHolistic ? HandStats : null);
+                    _poseProvider = wantHolistic
+                        ? PoseTrackingProviderRegistry.Create(PoseTrackingProviderRegistry.HolisticName, ctx)
+                        : PoseTrackingProviderRegistry.CreateDefault(ctx);
+                    _poseProviderIsHolistic = wantHolistic && _poseProvider != null;
                     _poseProvider?.Start();
                     PoseStats.Reset();
+                    if (wantHolistic) { HandStats.Reset(); _lastHandSequence = 0; }
                     _lastPoseSequence = 0;
+                    if (_poseProviderIsHolistic) Debug.Log($"VRMCast: holistic tracking started (pose + hands), finger rig bones: {_driver.FingerRigBoneCount}");
                 }
                 catch (Exception e)
                 {
                     Debug.LogException(e);
                     _poseProvider?.Dispose();
                     _poseProvider = null;
+                    _poseProviderIsHolistic = false;
                 }
-            }
-            else if (!wanted && _poseProvider != null)
-            {
-                try { _poseProvider.Stop(); _poseProvider.Dispose(); }
-                catch (Exception e) { Debug.LogException(e); }
-                _poseProvider = null;
-                BodySolver.Reset();
-                ArmSolver.Reset();
-                _latestPoseFrame = default;
             }
         }
 
         private void SyncHandProvider()
         {
-            var wanted = Enabled && Body.HandsEnabled && HandEngineAvailable;
+            // The separate hand landmarker is the fallback when no holistic model is present.
+            var wanted = Enabled && Body.HandsEnabled && !_poseProviderIsHolistic && HandTrackingProviderRegistry.HasProviders && _handModel != null;
             if (wanted && _handProvider == null)
             {
                 try
@@ -311,8 +329,6 @@ namespace VRMCast.Tracking
                 return;
             }
 
-            FaceFrameBuilder.SwapLeftRight = Settings.SwapEyes;
-            PoseFrameBuilder.SwapLeftRight = Body.SwapSides;
             _provider.Tick();
 
             if (_provider.TryGetLatest(out var frame) && frame.Timestamp > 0)
@@ -346,6 +362,13 @@ namespace VRMCast.Tracking
                     poseFrame.Timestamp = now;
                     _latestPoseFrame = poseFrame;
                     BodySolver.Submit(poseFrame);
+                    if (_poseProviderIsHolistic)
+                    {
+                        // Hands came with the pose, already on the user's real sides: no side resolution needed.
+                        _latestHandFrame = poseFrame;
+                        FingerSolver.Submit(poseFrame, now, Settings.MirrorUser);
+                        ArmSolver.SubmitHands(poseFrame, now);
+                    }
                 }
             }
 
@@ -358,7 +381,7 @@ namespace VRMCast.Tracking
                     _lastHandSequence = sequence;
                     // Decide which real hand each detection is (continuity, then pose wrists, then label) so fingers
                     // and arms always agree.
-                    _handSides.Resolve(ref handFrame, _latestPoseFrame.Pose, swap: Hands.SwapHands);
+                    _handSides.Resolve(ref handFrame, _latestPoseFrame.Pose, swap: false);
                     _latestHandFrame = handFrame;
                     FingerSolver.Submit(handFrame, now, Settings.MirrorUser);
                     ArmSolver.SubmitHands(handFrame, now);
@@ -368,8 +391,8 @@ namespace VRMCast.Tracking
             var pose = Solver.Update(dt, now);
             HybridLipSolver.Apply(pose.Expressions, LipSync, pose.Confidence, Microphone.Meter.Envelope, Microphone.Meter.IsOpen, Microphone.IsRunning);
             var body = BodySolver.Update(dt, now, Settings.MirrorUser);
-            var arms = ArmSolver.Update(_latestPoseFrame, BodySolver.IsTracking, now, dt, Settings.MirrorUser, Hands.SwapHands);
-            var hands = FingerSolver.Update(dt, now, _handProvider != null && Body.HandsEnabled);
+            var arms = ArmSolver.Update(_latestPoseFrame, BodySolver.IsTracking, now, dt, Settings.MirrorUser, false);
+            var hands = FingerSolver.Update(dt, now, HandProviderRunning && Body.HandsEnabled);
             _driver.Apply(pose, body, arms, hands);
             RefreshStatus();
         }

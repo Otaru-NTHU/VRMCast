@@ -131,33 +131,26 @@ the directions into local bone rotations with `FromToRotation` under the spine/c
 the torso, and orients each hand bone from the palm axes (fingers direction and palm normal, wrist bend capped
 at 85°) when the hand landmarker saw the hand.
 
-**Which side is which.** Observed on the unmirrored macOS FaceTime feed: the pose model and the face
-blendshapes name sides as they appear in a selfie mirror (its "left" is the user's real right), while the hand
-landmarker names the real hands. `PoseFrameBuilder` therefore swaps the pose labels by default
-(`BodyTrackingSettings.SwapSides`, "Swap body and arm sides" in the BODY section, default on) exactly like
-`FaceFrameBuilder` does for the blendshapes, so every solver downstream works with the user's real sides and the
-invert switches are no longer needed for a normal camera. `HandSideResolver` assigns each hand detection in three steps: continuity with the
-hand tracked in the previous frame (nearest wrist within 0.18 image widths, so a hand keeps its side while it
-moves and the detector may reorder its output), then the pose wrists (a wrist within 0.12 that is clearly nearer
-than the other overrides), then MediaPipe's handedness label for a brand-new hand that no wrist claims (observed anatomical on this feed;
-`HandSideResolver.LabelsAnatomical`). A brand-new detection farther than 0.35 image widths from every visible
-pose wrist is a stray and is dropped, and two detections within 0.05 of each other are the same hand reported
-twice, so a single raised hand can no longer drive both arms. Two detections never share a side. A camera that delivers a mirrored picture flips every label the same way and nothing in the
-geometry can tell: the BODY section's "Swap left and right (arms and fingers)" toggle undoes that for both.
+**Which side is which.** Observed on the unmirrored macOS FaceTime feed and locked in as the convention: the
+pose model and the face blendshapes name sides as they appear in a selfie mirror (their "left" is the user's
+real right), while the hand landmarker names the real hands. `PoseFrameBuilder` and `FaceFrameBuilder` swap
+those labels while building the frame, so every solver works with the user's real sides, and the body roll/yaw
+signs in `BodyPoseSolver` were fixed against the same on-device validation. The only user-facing switch is
+"Mirror (like a mirror)": on, the avatar is the reflection (user's right hand → avatar's left arm, on the same
+side of the screen); off, the avatar copies. Profiles from before this fix that reached a correct mirror by
+turning mirroring off and inverting yaw and roll are migrated to mirror mode on load. The invert switches
+remain in the settings for unusual cameras but have no UI.
 
-**Eyes and mouth sides.** MediaPipe's blendshape names ("eyeBlinkLeft", "mouthSmileLeft", "eyeLookOutLeft" …)
-are image sides in a selfie mirror, so on the unmirrored feed `FaceFrameBuilder` swaps every Left/Right pair
-before anything reads them (`FaceTrackingSettings.SwapEyes`, default on, "Swap eye sides" in the TRACKING
-section). After that the frame is anatomical and the ordinary mirror rule (user's left eye → avatar's right
-eye, on the same side of the screen) applies. Blink gain defaults to 2.5 because MediaPipe rarely reports a
-closed eye above 0.5, especially with glasses.
+**Which hand is which.** With the holistic model present (`holistic_landmarker.bytes`, the default),
+`MediaPipeHolisticProvider` delivers pose and both hands from one inference: the hands are located from the
+pose's own wrists, so the side comes from the model and a single raised hand can never drive both arms. The
+separate pose + hand landmarkers remain as a fallback when the holistic model is missing; there
+`HandSideResolver` assigns each detection by continuity with the previous frame, then pose-wrist proximity, then
+the handedness label, drops strays far from every wrist and collapses duplicates.
 
-**Overlay.** While tracking runs, the camera preview shows "P:L"/"P:R" at the pose wrists and "H:L→R"-style
-tags at the hands (raw label → resolved side); it is the fastest way to see which side each tracker decided.
-
-**Fingers** (mode "Upper Body + Arms + Fingers", default): `MediaPipeHandProvider` runs the Hand Landmarker
-(`hand_landmarker.bytes`, up to two hands, CPU, 15 fps, 640 px input) and publishes 21 world landmarks plus the
-wrist and palm-knuckle image positions per hand. `FingerCurl` (Core) sums the bend angles at the MCP, PIP and
+**Fingers** (mode "Upper Body + Arms + Fingers", default): the holistic provider (or, as a fallback,
+`MediaPipeHandProvider` with `hand_landmarker.bytes`) publishes 21 world landmarks plus the wrist and
+palm-knuckle image positions per hand at 15 fps from a 640 px input. `FingerCurl` (Core) sums the bend angles at the MCP, PIP and
 DIP joints (thumb: MCP + IP) and maps 25°–195° to a curl of 0..1 (thumb 15°–100°); because single-camera depth
 makes bends toward the camera read shallow, it also measures the tip-to-knuckle distance against the finger's
 length (1 straight, about 0.45 closed) and keeps the larger of the two. Neither depends on the hand's orientation. `FingerCurlSolver` smooths per hand, assigns hands with the same mirror rule as the arms, and
@@ -166,8 +159,7 @@ T-pose (palms down), each phalanx's rest rotation and the local axis that swings
 thumb also toward the little finger); at runtime each of the 15 bones per hand rotates about that axis by
 curl × (70° / 90° / 60°) for fingers and (20° / 40° / 55°) for the thumb. Finger spread is not tracked.
 
-The BODY section has "Invert body tilt / turn / lean" switches (stored in the profile) for a camera or model whose
-torso conventions disagree with the defaults, and a "Fingers:" status line that says at every moment why fingers
+The BODY section has a "Fingers:" status line that says at every moment why fingers
 move or not (mode off, model missing, hand model starting, no finger bones on the VRM, no hand seen, or the
 current curl per hand with the finger-bone count). The same facts are in the Copy Diagnostics report
 (`Hands:` and `Body angles:` lines).

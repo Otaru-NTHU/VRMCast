@@ -199,12 +199,12 @@ namespace VRMCast.Core.Tests
             PoseFrameBuilder.ComputeAngles(frame.Pose.Value, out var r, out var y, out var pch);
             BodyPose pose = default;
             for (var i = 0; i < 5; i++) { solver.Submit(frame); pose = solver.Update(1f / 60f, 0.01 * i, mirrorUser: true); }
-            Assert.That(pose.RollRad, Is.EqualTo(r).Within(1e-4f), "inverted roll");
-            Assert.That(pose.YawRad, Is.EqualTo(y).Within(1e-4f), "yaw untouched");
+            Assert.That(pose.RollRad, Is.EqualTo(-r).Within(1e-4f), "inverted roll");
+            Assert.That(pose.YawRad, Is.EqualTo(-y).Within(1e-4f), "yaw untouched");
             Assert.That(pose.PitchRad, Is.EqualTo(pch).Within(1e-4f));
             settings.InvertYaw = true; settings.InvertPitch = true;
             pose = solver.Update(1f / 60f, 0.06, mirrorUser: true);
-            Assert.That(pose.YawRad, Is.EqualTo(-y).Within(1e-4f));
+            Assert.That(pose.YawRad, Is.EqualTo(y).Within(1e-4f));
             Assert.That(pose.PitchRad, Is.EqualTo(-pch).Within(1e-4f));
         }
 
@@ -219,12 +219,13 @@ namespace VRMCast.Core.Tests
             BodyPose pose = default;
             for (var i = 0; i < 5; i++) { solver.Submit(frame); pose = solver.Update(1f / 60f, 0.01 * i, mirrorUser: true); }
             Assert.That(pose.HasBody, Is.True);
-            Assert.That(pose.RollRad, Is.EqualTo(-r).Within(1e-4f));
-            Assert.That(pose.YawRad, Is.EqualTo(y).Within(1e-4f));
-
-            pose = solver.Update(1f / 60f, 0.05, mirrorUser: false);
+            // Validated on device: mirror mode applies +roll and -yaw of the user-frame angles.
             Assert.That(pose.RollRad, Is.EqualTo(r).Within(1e-4f));
             Assert.That(pose.YawRad, Is.EqualTo(-y).Within(1e-4f));
+
+            pose = solver.Update(1f / 60f, 0.05, mirrorUser: false);
+            Assert.That(pose.RollRad, Is.EqualTo(-r).Within(1e-4f));
+            Assert.That(pose.YawRad, Is.EqualTo(y).Within(1e-4f));
 
             // Clamp: a huge tilt is limited.
             var extreme = PoseFrameBuilder.Build(1, World(shoulderDy: 2f), null);

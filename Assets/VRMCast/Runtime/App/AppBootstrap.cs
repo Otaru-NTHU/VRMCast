@@ -37,8 +37,10 @@ namespace VRMCast.App
         [SerializeField] private TextAsset _faceLandmarkerModel;
         [Tooltip("MediaPipe pose_landmarker_lite.bytes from the com.github.homuler.mediapipe package.")]
         [SerializeField] private TextAsset _poseLandmarkerModel;
-        [Tooltip("MediaPipe hand_landmarker.bytes from the com.github.homuler.mediapipe package.")]
+        [Tooltip("MediaPipe hand_landmarker.bytes from the com.github.homuler.mediapipe package (fallback when no holistic model).")]
         [SerializeField] private TextAsset _handLandmarkerModel;
+        [Tooltip("MediaPipe holistic_landmarker.bytes: pose and hands from one model, hands anchored on the pose wrists.")]
+        [SerializeField] private TextAsset _holisticLandmarkerModel;
 
         [Header("Defaults (PRD 34)")]
         [SerializeField] private int _outputWidth = OutputSettings.DefaultWidth;
@@ -106,7 +108,7 @@ namespace VRMCast.App
             var hands = new HandTrackingSettings();
             var microphone = new MicrophoneCaptureService(this, lipSync.Audio);
             var tracking = new TrackingCoordinator(this, avatars, capture, _faceLandmarkerModel, trackingSettings, _poseLandmarkerModel, lipSync, body, microphone,
-                _handLandmarkerModel, hands);
+                _handLandmarkerModel, hands, _holisticLandmarkerModel);
             diagnostics.AttachTracking(tracking);
 
             _services = new AppServices(localizer, render, avatars, background, camera, outputs, preview, debugOutput, diagnostics, capture, tracking);

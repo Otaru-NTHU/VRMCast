@@ -18,7 +18,7 @@ namespace VRMCast.Core.Tests
             face.Calibration = new CalibrationData(true, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
             var body = new BodyTrackingSettings { Mode = BodyTrackingMode.Off, Smoothing = 0.3f, NeutralYawRad = 0.25f, InvertRoll = true };
 
-            var hands = new HandTrackingSettings { Smoothing = 0.7f, CurlGain = 1.4f, SwapHands = true };
+            var hands = new HandTrackingSettings { Smoothing = 0.7f, CurlGain = 1.4f };
             var p = new ProfileData();
             ProfileMapper.CaptureTracking(p, face, body, trackingEnabled: true, hands);
 
@@ -28,7 +28,6 @@ namespace VRMCast.Core.Tests
             ProfileMapper.ApplyTracking(p, face2, body2, hands2);
             Assert.That(hands2.Smoothing, Is.EqualTo(0.7f));
             Assert.That(hands2.CurlGain, Is.EqualTo(1.4f));
-            Assert.That(hands2.SwapHands, Is.True);
 
             Assert.That(face2.Mode, Is.EqualTo(FaceTrackingMode.Advanced));
             Assert.That(face2.MirrorUser, Is.False);
@@ -105,6 +104,31 @@ namespace VRMCast.Core.Tests
             Assert.That(back[0].Key, Is.EqualTo("F1"));
             Assert.That(back[0].Intensity, Is.EqualTo(0.5f));
             Assert.That(back[0].Mode, Is.EqualTo(HotkeyTriggerMode.OneShot));
+        }
+
+        [Test]
+        public void LegacyMirrorWorkaroundMigratesToMirrorMode()
+        {
+            // Old profiles reached a correct mirror by turning mirroring off and inverting yaw and roll.
+            var p = new ProfileData();
+            p.tracking.mirrorUser = false;
+            p.tracking.invertYaw = true;
+            p.tracking.invertRoll = true;
+            p.body.invertRoll = true;
+            var face = new FaceTrackingSettings();
+            var body = new BodyTrackingSettings();
+            ProfileMapper.ApplyTracking(p, face, body);
+            Assert.That(face.MirrorUser, Is.True);
+            Assert.That(face.InvertYaw, Is.False);
+            Assert.That(face.InvertRoll, Is.False);
+            Assert.That(body.InvertRoll, Is.False);
+
+            // A deliberate copy mode without inverts is left alone.
+            var q = new ProfileData();
+            q.tracking.mirrorUser = false;
+            var face2 = new FaceTrackingSettings();
+            ProfileMapper.ApplyTracking(q, face2, new BodyTrackingSettings());
+            Assert.That(face2.MirrorUser, Is.False);
         }
 
         [Test]

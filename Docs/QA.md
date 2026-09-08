@@ -115,11 +115,12 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
 6c2. **Overlay.** While tracking runs, the camera preview shows P:L / P:R at your wrists and H:L→L style tags at
     your hands. P:L must sit on your real left wrist; each hand tag's arrow side must match the P tag it sits on.
     A screenshot of this preview is what to send when sides look wrong.
-6e. **Eyes.** Wink your left eye: the avatar winks the eye on the same side of the screen (its right). If the other
-    eye winks, untick "Swap eye sides". Blink strength default is now 2.5; existing profiles keep their old value.
-6d. **Body switches.** With "Swap body and arm sides" on (default) and every invert switch off: lean left → the
-    avatar's torso top goes to screen-left (mirror); raise your right hand → P:R sits on it in the preview and the
-    avatar raises its screen-right arm. The invert switches remain for unusual cameras and survive a relaunch.
+6e. **Eyes.** Wink your left eye: the avatar winks the eye on the same side of the screen (its right). Blink strength
+    default is now 2.5; existing profiles keep their old value.
+6d. **Mirror is the only switch.** With "Mirror (like a mirror)" on: lean left → the avatar's torso top goes to
+    screen-left; turn left → the avatar's face turns to screen-left; raise your right hand → P:R sits on it in the
+    preview and the avatar raises its screen-right arm (its left). Off: everything copies instead. An old profile
+    that had mirror off plus "invert yaw" and "invert roll" opens in mirror mode automatically.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
 8. **Performance.** Diagnostics: body ≈ 20 fps, hands ≈ 15 fps, face still ≈ 30 fps, render stays at the target.
 

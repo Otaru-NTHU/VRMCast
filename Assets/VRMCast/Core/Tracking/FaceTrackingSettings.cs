@@ -42,12 +42,6 @@ namespace VRMCast.Core.Tracking
         public bool InvertYaw { get; set; }
         public bool InvertRoll { get; set; }
 
-        /// <summary>
-        /// MediaPipe names eye/mouth sides as seen in a selfie mirror; on the app's unmirrored feed they must be swapped
-        /// (default). Turn off for a camera that delivers a mirrored picture.
-        /// </summary>
-        public bool SwapEyes { get; set; } = true;
-
         /// <summary>Maximum eye yaw / pitch in degrees sent to the avatar's LookAt for LookX/LookY = ±1.</summary>
         public float LookYawRangeDeg { get; set; } = 25f;
         public float LookPitchRangeDeg { get; set; } = 15f;

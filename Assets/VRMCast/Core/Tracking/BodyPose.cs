@@ -41,12 +41,6 @@ namespace VRMCast.Core.Tracking
         public float LostTimeoutSeconds { get; set; } = 0.5f;
         public float ReturnToNeutralSeconds { get; set; } = 1.0f;
 
-        /// <summary>
-        /// The pose model labels image sides (selfie convention) on an unmirrored feed; swapping them (default) gives
-        /// the user's real sides for the torso and the arms. Off for a camera that delivers a mirrored picture.
-        /// </summary>
-        public bool SwapSides { get; set; } = true;
-
         /// <summary>Per-axis sign switches for cameras or models whose torso conventions disagree with the defaults.</summary>
         public bool InvertRoll { get; set; }
         public bool InvertYaw { get; set; }
@@ -84,9 +78,9 @@ namespace VRMCast.Core.Tracking
     public static class PoseFrameBuilder
     {
         /// <summary>
-        /// When true (default) the pose model's Left/Right labels are treated as image sides (the model names them as
-        /// in a selfie mirror, like the face blendshapes) and swapped into the user's real sides while building the
-        /// frame. Mirrored camera feeds set it to false. Read on the inference thread; written by settings.
+        /// The pose model's Left/Right labels are image sides (it names them as in a selfie mirror, like the face
+        /// blendshapes): on the unmirrored camera feed they are swapped into the user's real sides while building the
+        /// frame. Tests that feed raw landmarks turn this off.
         /// </summary>
         public static volatile bool SwapLeftRight = true;
 
@@ -289,9 +283,11 @@ namespace VRMCast.Core.Tracking
             var yaw = _yaw.Update(ty, dt, tau);
             var pitch = _pitch.Update(tp, dt, tau);
 
+            // Signs validated on device with the real-side labels: mirror mode leans and turns the avatar toward the
+            // same side of the screen as the user; copy mode (mirror off) flips both.
             var mirrorSign = mirrorUser ? 1f : -1f;
-            Pose.RollRad = -roll * mirrorSign * (s.InvertRoll ? -1f : 1f);
-            Pose.YawRad = yaw * mirrorSign * (s.InvertYaw ? -1f : 1f);
+            Pose.RollRad = roll * mirrorSign * (s.InvertRoll ? -1f : 1f);
+            Pose.YawRad = -yaw * mirrorSign * (s.InvertYaw ? -1f : 1f);
             Pose.PitchRad = pitch * (s.InvertPitch ? -1f : 1f);
             Pose.HasBody = bodyRecent;
             return Pose;

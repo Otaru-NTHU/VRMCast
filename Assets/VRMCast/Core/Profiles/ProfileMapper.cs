@@ -26,7 +26,15 @@ namespace VRMCast.Core.Profiles
             face.InvertPitch = p.tracking.invertPitch;
             face.InvertYaw = p.tracking.invertYaw;
             face.InvertRoll = p.tracking.invertRoll;
-            face.SwapEyes = p.tracking.swapEyes;
+            // Profiles saved before the side conventions were fixed reached a correct mirror by turning mirroring
+            // off and inverting yaw and roll; that combination is exactly mirror mode now.
+            var legacyMirror = !face.MirrorUser && face.InvertYaw && face.InvertRoll;
+            if (legacyMirror)
+            {
+                face.MirrorUser = true;
+                face.InvertYaw = false;
+                face.InvertRoll = false;
+            }
             face.LookGain = p.tracking.lookGain;
             var c = p.calibration;
             face.Calibration = c.isCalibrated
@@ -39,8 +47,8 @@ namespace VRMCast.Core.Profiles
             body.InvertRoll = p.body.invertRoll;
             body.InvertYaw = p.body.invertYaw;
             body.InvertPitch = p.body.invertPitch;
+            if (legacyMirror) { body.InvertRoll = false; body.InvertYaw = false; }
             body.ArmsFromHands = p.body.armsFromHands;
-            body.SwapSides = p.body.swapSides;
             body.WristFromPalm = p.body.wristFromPalm;
             body.NeutralRollRad = c.bodyRollRad;
             body.NeutralYawRad = c.bodyYawRad;
@@ -52,7 +60,6 @@ namespace VRMCast.Core.Profiles
                 var h = p.hands ?? new HandTuningData();
                 hands.Smoothing = h.smoothing;
                 hands.CurlGain = h.curlGain;
-                hands.SwapHands = h.swapHands;
                 hands.Clamp();
             }
         }
@@ -74,7 +81,6 @@ namespace VRMCast.Core.Profiles
                 invertPitch = face.InvertPitch,
                 invertYaw = face.InvertYaw,
                 invertRoll = face.InvertRoll,
-                swapEyes = face.SwapEyes,
                 lookGain = face.LookGain,
             };
             var c = face.Calibration ?? CalibrationData.Identity;
@@ -85,8 +91,8 @@ namespace VRMCast.Core.Profiles
                 lookX = c.LookX, lookY = c.LookY, mouthOpen = c.MouthOpen, smile = c.Smile,
                 bodyRollRad = body.NeutralRollRad, bodyYawRad = body.NeutralYawRad, bodyPitchRad = body.NeutralPitchRad,
             };
-            p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain, invertRoll = body.InvertRoll, invertYaw = body.InvertYaw, invertPitch = body.InvertPitch, armsFromHands = body.ArmsFromHands, wristFromPalm = body.WristFromPalm, swapSides = body.SwapSides };
-            if (hands != null) p.hands = new HandTuningData { smoothing = hands.Smoothing, curlGain = hands.CurlGain, swapHands = hands.SwapHands };
+            p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain, invertRoll = body.InvertRoll, invertYaw = body.InvertYaw, invertPitch = body.InvertPitch, armsFromHands = body.ArmsFromHands, wristFromPalm = body.WristFromPalm };
+            if (hands != null) p.hands = new HandTuningData { smoothing = hands.Smoothing, curlGain = hands.CurlGain };
         }
 
         // ------------------------------------------------------------- mappings

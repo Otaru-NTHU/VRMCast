@@ -24,11 +24,6 @@ namespace VRMCast.Core.Tracking
         public float CurlGain { get; set; } = 1f;
         /// <summary>Relaxed hand: slightly curled fingers look more natural than a flat hand.</summary>
         public float RestCurl { get; set; } = 0.1f;
-        /// <summary>
-        /// Swaps left and right for arms and fingers together. Needed when the camera delivers a mirrored picture:
-        /// every landmark label is then flipped the same way, which the solvers cannot tell from geometry.
-        /// </summary>
-        public bool SwapHands { get; set; }
 
         public void Clamp()
         {

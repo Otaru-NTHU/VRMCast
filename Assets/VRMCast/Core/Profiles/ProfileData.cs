@@ -63,7 +63,6 @@ namespace VRMCast.Core.Profiles
         public float headDeadZoneDeg = 0.8f;
         public float blinkGain = 2.5f;
         public bool invertPitch, invertYaw, invertRoll;
-        public bool swapEyes = true;
         public float lookGain = 1.2f;
     }
 
@@ -75,7 +74,6 @@ namespace VRMCast.Core.Profiles
         public bool invertRoll, invertYaw, invertPitch;
         public bool armsFromHands = true;
         public bool wristFromPalm;
-        public bool swapSides = true;
     }
 
     [Serializable]
@@ -83,7 +81,6 @@ namespace VRMCast.Core.Profiles
     {
         public float smoothing = 0.35f;
         public float curlGain = 1f;
-        public bool swapHands;
     }
 
     [Serializable]
