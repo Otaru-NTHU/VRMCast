@@ -30,7 +30,7 @@ namespace VRMCast.Core.Tracking
         public float HeadDeadZoneDeg { get; set; } = 0.8f;
 
         /// <summary>Extra gain on blink weights; MediaPipe rarely reports a full 1.0, especially with glasses.</summary>
-        public float BlinkGain { get; set; } = 1.8f;
+        public float BlinkGain { get; set; } = 2.5f;
 
         /// <summary>Share of the tracked head rotation applied to each bone (PRD 11, tuned so the chain sums to 1).</summary>
         public float HeadRatio { get; set; } = 0.55f;
@@ -41,6 +41,12 @@ namespace VRMCast.Core.Tracking
         public bool InvertPitch { get; set; }
         public bool InvertYaw { get; set; }
         public bool InvertRoll { get; set; }
+
+        /// <summary>
+        /// MediaPipe names eye/mouth sides as seen in a selfie mirror; on the app's unmirrored feed they must be swapped
+        /// (default). Turn off for a camera that delivers a mirrored picture.
+        /// </summary>
+        public bool SwapEyes { get; set; } = true;
 
         /// <summary>Maximum eye yaw / pitch in degrees sent to the avatar's LookAt for LookX/LookY = ±1.</summary>
         public float LookYawRangeDeg { get; set; } = 25f;

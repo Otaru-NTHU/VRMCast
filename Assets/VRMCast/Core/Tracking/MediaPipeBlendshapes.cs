@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace VRMCast.Core.Tracking
@@ -76,6 +77,32 @@ namespace VRMCast.Core.Tracking
         public static float Get(IReadOnlyDictionary<string, float> shapes, string name)
         {
             return shapes != null && shapes.TryGetValue(name, out var v) ? v : 0f;
+        }
+
+        /// <summary>
+        /// Swaps every "...Left" / "...Right" coefficient in place. MediaPipe names sides as they appear in a selfie
+        /// (mirrored) picture, so on an unmirrored camera feed "eyeBlinkLeft" is the user's right eye; this makes the
+        /// names anatomical, which is what <see cref="TrackingFrame"/> promises.
+        /// </summary>
+        public static void SwapSides(Dictionary<string, float> shapes)
+        {
+            if (shapes == null) return;
+            var keys = new List<string>(shapes.Keys);
+            var done = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var key in keys)
+            {
+                if (done.Contains(key)) continue;
+                string other;
+                if (key.EndsWith("Left", StringComparison.Ordinal)) other = key.Substring(0, key.Length - 4) + "Right";
+                else if (key.EndsWith("Right", StringComparison.Ordinal)) other = key.Substring(0, key.Length - 5) + "Left";
+                else continue;
+                var a = shapes[key];
+                var b = shapes.TryGetValue(other, out var v) ? v : 0f;
+                shapes[key] = b;
+                shapes[other] = a;
+                done.Add(key);
+                done.Add(other);
+            }
         }
     }
 }

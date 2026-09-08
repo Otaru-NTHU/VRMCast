@@ -151,6 +151,55 @@ namespace VRMCast.Core.Tests
         }
 
         [Test]
+        public void ResolverKeepsSideWhileHandMovesAwayFromPoseWrist()
+        {
+            var pose = PoseFrame();
+            var p = pose.Pose.Value;
+            var resolver = new HandSideResolver();
+            // Frame 1: on the left pose wrist, label says the opposite → proximity decides: left.
+            var f1 = HandFrameBuilder.Build(0, Hand(p.LeftWristU, p.LeftWristV, realLeft: true, label: true), null);
+            resolver.Resolve(ref f1, pose.Pose, false);
+            Assert.That(f1.LeftHand.HasValue, Is.True);
+            // Frames 2..6: the hand drifts up, far from any pose wrist, in 0.08 steps; the side must not flip.
+            for (var i = 1; i <= 5; i++)
+            {
+                var f = HandFrameBuilder.Build(i, Hand(p.LeftWristU, p.LeftWristV - 0.15f * i, realLeft: true, label: true), null);
+                resolver.Resolve(ref f, pose.Pose, false);
+                Assert.That(f.LeftHand.HasValue, Is.True, $"frame {i}");
+                Assert.That(f.RightHand.HasValue, Is.False, $"frame {i}");
+            }
+        }
+
+        [Test]
+        public void ResolverGivesTwoHandsDifferentSides()
+        {
+            var pose = PoseFrame();
+            var p = pose.Pose.Value;
+            var resolver = new HandSideResolver();
+            var near = Hand(p.LeftWristU + 0.01f, p.LeftWristV, realLeft: true, label: true);
+            var far = Hand(p.LeftWristU + 0.09f, p.LeftWristV, realLeft: true, label: true);
+            var f = HandFrameBuilder.Build(0, near, far);
+            resolver.Resolve(ref f, pose.Pose, false);
+            Assert.That(f.LeftHand.HasValue && f.RightHand.HasValue, Is.True);
+            Assert.That(f.LeftHand.Value.WristU, Is.EqualTo(near.WristU).Within(1e-5f));
+            // Next frame, the detector reports them in the other order: sides stay.
+            f = HandFrameBuilder.Build(1, far, near);
+            resolver.Resolve(ref f, pose.Pose, false);
+            Assert.That(f.LeftHand.Value.WristU, Is.EqualTo(near.WristU).Within(1e-5f));
+        }
+
+        [Test]
+        public void ResolverSwapFlipsFinalSides()
+        {
+            var pose = PoseFrame();
+            var p = pose.Pose.Value;
+            var resolver = new HandSideResolver();
+            var f = HandFrameBuilder.Build(0, Hand(p.LeftWristU, p.LeftWristV, realLeft: true), null);
+            resolver.Resolve(ref f, pose.Pose, swap: true);
+            Assert.That(f.RightHand.HasValue, Is.True);
+        }
+
+        [Test]
         public void TwoBoneIkReachesTargetAndBendsTowardPole()
         {
             var solver = NewSolver();

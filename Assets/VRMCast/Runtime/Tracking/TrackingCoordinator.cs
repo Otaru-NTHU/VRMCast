@@ -33,6 +33,8 @@ namespace VRMCast.Tracking
         private long _lastPoseSequence;
         private IUnityHandTrackingProvider _handProvider;
         private long _lastHandSequence;
+        private readonly HandSideResolver _handSides = new HandSideResolver();
+        private TrackingFrame _latestHandFrame;
         private readonly CalibrationSampler _calibration = new CalibrationSampler();
         private IUnityFaceTrackingProvider _provider;
         private long _lastSequence;
@@ -57,6 +59,8 @@ namespace VRMCast.Tracking
         public bool HandProviderRunning => _handProvider != null && _handProvider.IsRunning;
         public int FingerRigBones => _driver.FingerRigBoneCount;
         public TrackingFrame LatestPoseFrame => _latestPoseFrame;
+        /// <summary>Last hand frame after side resolution (raw labels still inside each hand).</summary>
+        public TrackingFrame LatestHandFrame => _latestHandFrame;
         public bool ArmsFromHands => ArmSolver.Pose.Left.FromHand || ArmSolver.Pose.Right.FromHand;
 
         /// <summary>Support text for the hand pipeline: why fingers are (not) moving.</summary>
@@ -203,6 +207,8 @@ namespace VRMCast.Tracking
                 catch (Exception e) { Debug.LogException(e); }
                 _handProvider = null;
                 FingerSolver.Reset();
+                _handSides.Reset();
+                _latestHandFrame = default;
             }
         }
 
@@ -305,6 +311,7 @@ namespace VRMCast.Tracking
                 return;
             }
 
+            FaceFrameBuilder.SwapLeftRight = Settings.SwapEyes;
             _provider.Tick();
 
             if (_provider.TryGetLatest(out var frame) && frame.Timestamp > 0)
@@ -348,8 +355,10 @@ namespace VRMCast.Tracking
                 if (sequence != _lastHandSequence)
                 {
                     _lastHandSequence = sequence;
-                    // Decide which real hand each detection is against the pose wrists, so fingers and arms agree.
-                    HandFrameBuilder.ResolveSides(ref handFrame, _latestPoseFrame.Pose, imageMirrored: false, swap: Hands.SwapHands);
+                    // Decide which real hand each detection is (continuity, then pose wrists, then label) so fingers
+                    // and arms always agree.
+                    _handSides.Resolve(ref handFrame, _latestPoseFrame.Pose, swap: Hands.SwapHands);
+                    _latestHandFrame = handFrame;
                     FingerSolver.Submit(handFrame, now, Settings.MirrorUser);
                     ArmSolver.SubmitHands(handFrame, now);
                 }

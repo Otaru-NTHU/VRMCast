@@ -61,8 +61,9 @@ namespace VRMCast.Core.Profiles
         public float lookSmoothing = 0.4f;
         public float headGain = 1f;
         public float headDeadZoneDeg = 0.8f;
-        public float blinkGain = 1.8f;
+        public float blinkGain = 2.5f;
         public bool invertPitch, invertYaw, invertRoll;
+        public bool swapEyes = true;
         public float lookGain = 1.2f;
     }
 

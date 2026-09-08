@@ -393,3 +393,139 @@ namespace VRMCast.Core.Tracking
         }
     }
 }
+
+namespace VRMCast.Core.Tracking
+{
+    /// <summary>
+    /// Stateful side assignment for hand detections. Each detection is first matched to the hand tracked in the
+    /// previous frame by wrist position (so a hand keeps its side while it moves, even when the detector reorders
+    /// its output); the pose wrists then confirm or override the side when one of them is clearly nearer; the
+    /// handedness label is the last resort for a brand-new hand far from any pose wrist. Two detections never share
+    /// a side: the one with the better evidence keeps it.
+    /// </summary>
+    public sealed class HandSideResolver
+    {
+        /// <summary>Wrist travel between consecutive frames that still counts as the same hand (width-normalized).</summary>
+        public float TrackDistance { get; set; } = 0.18f;
+        /// <summary>A pose wrist within this distance claims the hand.</summary>
+        public float PoseMatchDistance { get; set; } = HandFrameBuilder.WristMatchDistance;
+        /// <summary>The nearer pose wrist must be this much nearer than the other to override a tracked side.</summary>
+        public float PoseAmbiguityRatio { get; set; } = 1.5f;
+        public float MinWristVisibility { get; set; } = 0.3f;
+
+        /// <summary>How MediaPipe's handedness label maps when nothing else helps; see <see cref="HandFrameBuilder.IsUserLeft"/>.</summary>
+        public bool ImageMirrored { get; set; }
+
+        private struct Tracked
+        {
+            public bool Valid;
+            public float U, V;
+            public bool Left;
+        }
+
+        private Tracked _prevA, _prevB;
+
+        public void Reset()
+        {
+            _prevA = default;
+            _prevB = default;
+        }
+
+        /// <summary>Assigns the detections in <paramref name="hands"/> (packed by raw label) to the user's real sides.</summary>
+        public void Resolve(ref TrackingFrame hands, PoseTracking? pose, bool swap)
+        {
+            var a = hands.LeftHand;
+            var b = hands.RightHand;
+            hands.LeftHand = null;
+            hands.RightHand = null;
+
+            var havePose = pose.HasValue && pose.Value.HasImageCoords;
+            var p = pose ?? default;
+            var aspect = havePose && p.ImageAspect > 0f ? p.ImageAspect : 1f;
+
+            var sideA = Decide(a, havePose, p, aspect, out var scoreA);
+            var sideB = Decide(b, havePose, p, aspect, out var scoreB);
+
+            if (sideA.HasValue && sideB.HasValue && sideA.Value == sideB.Value)
+            {
+                // Same side claimed twice: the stronger evidence wins, the other takes the free side.
+                if (scoreA >= scoreB) sideB = !sideA.Value; else sideA = !sideB.Value;
+            }
+
+            _prevA = Remember(a, sideA);
+            _prevB = Remember(b, sideB);
+
+            HandTracking? left = null, right = null;
+            Place(a, sideA, swap, ref left, ref right);
+            Place(b, sideB, swap, ref left, ref right);
+            hands.LeftHand = left;
+            hands.RightHand = right;
+        }
+
+        private static Tracked Remember(HandTracking? hand, bool? side)
+        {
+            if (!hand.HasValue || !side.HasValue) return default;
+            return new Tracked { Valid = true, U = hand.Value.WristU, V = hand.Value.WristV, Left = side.Value };
+        }
+
+        private static void Place(HandTracking? hand, bool? side, bool swap, ref HandTracking? left, ref HandTracking? right)
+        {
+            if (!hand.HasValue || !side.HasValue) return;
+            var isLeft = swap ? !side.Value : side.Value;
+            if (isLeft) left = hand; else right = hand;
+        }
+
+        /// <summary>Side for one detection plus an evidence score (higher = more certain).</summary>
+        private bool? Decide(HandTracking? hand, bool havePose, in PoseTracking p, float aspect, out float score)
+        {
+            score = 0f;
+            if (!hand.HasValue) return null;
+            var h = hand.Value;
+
+            // 1. Continuity with the previous frame.
+            bool? tracked = null;
+            var bestTrack = TrackDistance;
+            foreach (var prev in new[] { _prevA, _prevB })
+            {
+                if (!prev.Valid) continue;
+                var d = Dist(h.WristU, h.WristV, prev.U, prev.V, aspect);
+                if (d < bestTrack) { bestTrack = d; tracked = prev.Left; }
+            }
+
+            // 2. Pose wrists.
+            if (havePose)
+            {
+                var dl = p.LeftWristVisibility >= MinWristVisibility ? Dist(h.WristU, h.WristV, p.LeftWristU, p.LeftWristV, aspect) : float.MaxValue;
+                var dr = p.RightWristVisibility >= MinWristVisibility ? Dist(h.WristU, h.WristV, p.RightWristU, p.RightWristV, aspect) : float.MaxValue;
+                var near = Math.Min(dl, dr);
+                var far = Math.Max(dl, dr);
+                if (near <= PoseMatchDistance)
+                {
+                    var unambiguous = far == float.MaxValue || far >= near * PoseAmbiguityRatio;
+                    if (unambiguous || !tracked.HasValue)
+                    {
+                        score = 2f + (1f - near / PoseMatchDistance);
+                        return dl <= dr;
+                    }
+                }
+            }
+
+            if (tracked.HasValue)
+            {
+                score = 1f + (1f - bestTrack / TrackDistance);
+                return tracked.Value;
+            }
+
+            // 3. Label.
+            score = 0.5f * h.Confidence;
+            return HandFrameBuilder.IsUserLeft(h.LabelLeft, ImageMirrored, false);
+        }
+
+        private static float Dist(float u0, float v0, float u1, float v1, float aspect)
+        {
+            var du = u0 - u1;
+            var dv = (v0 - v1) / aspect;
+            return (float)Math.Sqrt(du * du + dv * dv);
+        }
+    }
+}

@@ -10,6 +10,12 @@ namespace VRMCast.Core.Tracking
     /// </summary>
     public static class FaceFrameBuilder
     {
+        /// <summary>
+        /// When true (default) MediaPipe's Left/Right blendshape names are treated as image sides and swapped into the
+        /// user's own sides. Mirrored camera feeds set it to false. Read on the inference thread; written by settings.
+        /// </summary>
+        public static volatile bool SwapLeftRight = true;
+
         /// <summary>Builds a frame for a detected face.</summary>
         /// <param name="blendshapes">Coefficient by MediaPipe name; the dictionary is stored, not copied.</param>
         /// <param name="forward">Face forward axis in camera space (toward the camera when facing it). Null when no matrix was output.</param>
@@ -37,6 +43,7 @@ namespace VRMCast.Core.Tracking
                 frame.Head.PositionZ = position[2];
             }
 
+            if (SwapLeftRight) MediaPipeBlendshapes.SwapSides(blendshapes);
             var s = blendshapes;
             frame.Eyes.BlinkLeft = MediaPipeBlendshapes.Get(s, MediaPipeBlendshapes.EyeBlinkLeft);
             frame.Eyes.BlinkRight = MediaPipeBlendshapes.Get(s, MediaPipeBlendshapes.EyeBlinkRight);

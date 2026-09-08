@@ -48,8 +48,8 @@ namespace VRMCast.Core.Tracking
     {
         public static List<ExpressionMapping> Basic() => new List<ExpressionMapping>
         {
-            new ExpressionMapping(MediaPipeBlendshapes.EyeBlinkLeft, VrmExpressions.BlinkLeft, gain: 1.15f, threshold: 0.08f, smoothing: 0.15f),
-            new ExpressionMapping(MediaPipeBlendshapes.EyeBlinkRight, VrmExpressions.BlinkRight, gain: 1.15f, threshold: 0.08f, smoothing: 0.15f),
+            new ExpressionMapping(MediaPipeBlendshapes.EyeBlinkLeft, VrmExpressions.BlinkLeft, gain: 1.15f, threshold: 0.1f, smoothing: 0.12f),
+            new ExpressionMapping(MediaPipeBlendshapes.EyeBlinkRight, VrmExpressions.BlinkRight, gain: 1.15f, threshold: 0.1f, smoothing: 0.12f),
             new ExpressionMapping(MediaPipeBlendshapes.JawOpen, VrmExpressions.Aa, gain: 1.3f, threshold: 0.06f, smoothing: 0.25f),
             new ExpressionMapping(MediaPipeBlendshapes.MouthSmileLeft, VrmExpressions.Happy, gain: 1.0f, threshold: 0.25f, smoothing: 0.4f),
             new ExpressionMapping(MediaPipeBlendshapes.MouthSmileRight, VrmExpressions.Happy, gain: 1.0f, threshold: 0.25f, smoothing: 0.4f),

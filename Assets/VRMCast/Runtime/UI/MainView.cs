@@ -88,6 +88,9 @@ namespace VRMCast.UI
         private readonly Toggle _invertPitch;
         private readonly Toggle _invertYaw;
         private readonly Toggle _invertRoll;
+        private readonly Toggle _swapEyes;
+        private readonly VisualElement _cameraPreviewBox;
+        private readonly List<Label> _trackMarkers = new List<Label>();
         private readonly Label _diagTracking;
         private readonly Label _statusFace;
         private static readonly FaceTrackingMode[] TrackingModeOrder = { FaceTrackingMode.Basic, FaceTrackingMode.Advanced };
@@ -202,6 +205,8 @@ namespace VRMCast.UI
             _invertPitch = Q<Toggle>("invert-pitch");
             _invertYaw = Q<Toggle>("invert-yaw");
             _invertRoll = Q<Toggle>("invert-roll");
+            _swapEyes = Q<Toggle>("swap-eyes");
+            _cameraPreviewBox = Q<VisualElement>("camera-preview-box");
             _diagTracking = Q<Label>("diag-tracking");
             _statusFace = Q<Label>("status-face");
 
@@ -482,6 +487,7 @@ namespace VRMCast.UI
             _invertPitch.label = _loc["tracking.invertPitch"];
             _invertYaw.label = _loc["tracking.invertYaw"];
             _invertRoll.label = _loc["tracking.invertRoll"];
+            _swapEyes.label = _loc["tracking.swapEyes"];
             Q<Button>("clear-calibration").text = _loc["tracking.clearCalibration"];
 
             Q<Label>("section-lipsync").text = _loc["section.lipsync"];
@@ -748,6 +754,7 @@ namespace VRMCast.UI
             _invertPitch.RegisterValueChangedCallback(evt => { tracking.Settings.InvertPitch = evt.newValue; tracking.NotifySettingsChanged(); });
             _invertYaw.RegisterValueChangedCallback(evt => { tracking.Settings.InvertYaw = evt.newValue; tracking.NotifySettingsChanged(); });
             _invertRoll.RegisterValueChangedCallback(evt => { tracking.Settings.InvertRoll = evt.newValue; tracking.NotifySettingsChanged(); });
+            _swapEyes.RegisterValueChangedCallback(evt => { tracking.Settings.SwapEyes = evt.newValue; tracking.NotifySettingsChanged(); });
             Q<Button>("clear-calibration").clicked += () =>
             {
                 tracking.ClearCalibration();
@@ -806,6 +813,7 @@ namespace VRMCast.UI
             _invertPitch.SetValueWithoutNotify(settings.InvertPitch);
             _invertYaw.SetValueWithoutNotify(settings.InvertYaw);
             _invertRoll.SetValueWithoutNotify(settings.InvertRoll);
+            _swapEyes.SetValueWithoutNotify(settings.SwapEyes);
 
             _statusFace.text = _loc[tracking.CurrentStatus == TrackingCoordinator.Status.Tracking ? "status.faceOn"
                 : tracking.Enabled ? "status.faceSearching" : "status.faceOff"];
@@ -953,6 +961,7 @@ namespace VRMCast.UI
         public void TickFast()
         {
             if (_performance) return;
+            RefreshTrackingOverlay();
             var mic = _services.Microphone;
             var meter = mic.Meter;
             var running = mic.IsRunning;
@@ -968,6 +977,61 @@ namespace VRMCast.UI
                 _statusAudio.text = text;
                 _statusAudio.EnableInClassList("status-dim", !running || !meter.IsOpen);
             }
+        }
+
+        /// <summary>
+        /// Draws what the trackers decided over the camera preview: "P:L"/"P:R" at the pose wrists (the user's sides as
+        /// the pose model labels them) and "H:L→R" style tags at each hand (raw handedness label → resolved side).
+        /// Support aid for left/right questions; costs nothing when tracking is off.
+        /// </summary>
+        private void RefreshTrackingOverlay()
+        {
+            var tracking = _services.Tracking;
+            var tex = _services.Camera2D.Texture;
+            var rect = _cameraPreviewBox.contentRect;
+            var used = 0;
+            if (tracking.Enabled && tex != null && rect.width > 1f && rect.height > 1f && _cameraPreview.image != null)
+            {
+                var texAspect = tex.width / (float)Mathf.Max(1, tex.height);
+                var boxAspect = rect.width / rect.height;
+                float w, h, ox, oy;
+                if (texAspect > boxAspect) { w = rect.width; h = w / texAspect; ox = 0f; oy = (rect.height - h) * 0.5f; }
+                else { h = rect.height; w = h * texAspect; oy = 0f; ox = (rect.width - w) * 0.5f; }
+                var mirrored = _services.Camera2D.MirrorPreview;
+
+                void Put(float u, float v, string text, bool hand)
+                {
+                    Label label;
+                    if (used < _trackMarkers.Count) label = _trackMarkers[used];
+                    else
+                    {
+                        label = new Label();
+                        label.AddToClassList("track-marker");
+                        label.pickingMode = PickingMode.Ignore;
+                        _cameraPreviewBox.Add(label);
+                        _trackMarkers.Add(label);
+                    }
+                    used++;
+                    var uu = mirrored ? 1f - u : u;
+                    label.style.left = ox + Mathf.Clamp01(uu) * w - 10f;
+                    label.style.top = oy + Mathf.Clamp01(v) * h - 7f;
+                    label.text = text;
+                    label.EnableInClassList("hand", hand);
+                    label.style.display = DisplayStyle.Flex;
+                }
+
+                var pose = tracking.LatestPoseFrame.Pose;
+                if (pose.HasValue && pose.Value.HasImageCoords)
+                {
+                    var p = pose.Value;
+                    if (p.LeftWristVisibility >= 0.3f) Put(p.LeftWristU, p.LeftWristV, "P:L", false);
+                    if (p.RightWristVisibility >= 0.3f) Put(p.RightWristU, p.RightWristV, "P:R", false);
+                }
+                var hands = tracking.LatestHandFrame;
+                if (hands.LeftHand.HasValue) { var hd = hands.LeftHand.Value; Put(hd.WristU, hd.WristV, (hd.LabelLeft ? "H:L" : "H:R") + "→L", true); }
+                if (hands.RightHand.HasValue) { var hd = hands.RightHand.Value; Put(hd.WristU, hd.WristV, (hd.LabelLeft ? "H:L" : "H:R") + "→R", true); }
+            }
+            for (var i = used; i < _trackMarkers.Count; i++) _trackMarkers[i].style.display = DisplayStyle.None;
         }
 
         // -------------------------------------------------------------- Framing

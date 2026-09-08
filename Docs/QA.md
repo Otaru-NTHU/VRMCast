@@ -112,6 +112,11 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
     right (arms and fingers)"; arms and fingers must never disagree with each other. Drop the hands out of frame:
     fingers relax open within half a second and the arms fall back to the pose landmarks, then rest.
     Diagnostics shows Hands ≈ 15 fps, and the "Fingers:" line under the body mode shows the curl per hand.
+6c2. **Overlay.** While tracking runs, the camera preview shows P:L / P:R at your wrists and H:L→L style tags at
+    your hands. P:L must sit on your real left wrist; each hand tag's arrow side must match the P tag it sits on.
+    A screenshot of this preview is what to send when sides look wrong.
+6e. **Eyes.** Wink your left eye: the avatar winks the eye on the same side of the screen (its right). If the other
+    eye winks, untick "Swap eye sides". Blink strength default is now 2.5; existing profiles keep their old value.
 6d. **Body switches.** Lean left: the avatar's torso top goes to screen-left (mirror). If not, "Invert body tilt"
     fixes it and the setting survives a relaunch; same for turn and lean.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.

@@ -129,12 +129,23 @@ the torso, and orients each hand bone from the palm axes (fingers direction and 
 at 85°) when the hand landmarker saw the hand.
 
 **Which hand is which.** The pose labels the user's left and right for an unmirrored camera picture, and the
-solver trusts those labels. Each hand detection is matched to the nearest visible pose wrist in the image
-(`HandFrameBuilder.ResolveSides`), so the fingers always belong to the arm the pose drives; only when no pose
-wrist is near does MediaPipe's handedness label decide (it assumes a mirrored selfie image, so "Left" means the
-real right hand on an unmirrored feed). A camera that delivers a mirrored picture flips every label the same
-way and nothing in the geometry can tell: the BODY section's "Swap left and right (arms and fingers)" toggle
-undoes that for both at once.
+solver trusts those labels. `HandSideResolver` assigns each hand detection in three steps: continuity with the
+hand tracked in the previous frame (nearest wrist within 0.18 image widths, so a hand keeps its side while it
+moves and the detector may reorder its output), then the pose wrists (a wrist within 0.12 that is clearly nearer
+than the other overrides), then MediaPipe's handedness label for a brand-new hand far from any wrist (the label
+assumes a mirrored selfie image, so "Left" means the real right hand on an unmirrored feed). Two detections
+never share a side. A camera that delivers a mirrored picture flips every label the same way and nothing in the
+geometry can tell: the BODY section's "Swap left and right (arms and fingers)" toggle undoes that for both.
+
+**Eyes and mouth sides.** MediaPipe's blendshape names ("eyeBlinkLeft", "mouthSmileLeft", "eyeLookOutLeft" …)
+are image sides in a selfie mirror, so on the unmirrored feed `FaceFrameBuilder` swaps every Left/Right pair
+before anything reads them (`FaceTrackingSettings.SwapEyes`, default on, "Swap eye sides" in the TRACKING
+section). After that the frame is anatomical and the ordinary mirror rule (user's left eye → avatar's right
+eye, on the same side of the screen) applies. Blink gain defaults to 2.5 because MediaPipe rarely reports a
+closed eye above 0.5, especially with glasses.
+
+**Overlay.** While tracking runs, the camera preview shows "P:L"/"P:R" at the pose wrists and "H:L→R"-style
+tags at the hands (raw label → resolved side); it is the fastest way to see which side each tracker decided.
 
 **Fingers** (mode "Upper Body + Arms + Fingers", default): `MediaPipeHandProvider` runs the Hand Landmarker
 (`hand_landmarker.bytes`, up to two hands, CPU, 15 fps, 640 px input) and publishes 21 world landmarks plus the

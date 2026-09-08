@@ -26,6 +26,7 @@ namespace VRMCast.Core.Profiles
             face.InvertPitch = p.tracking.invertPitch;
             face.InvertYaw = p.tracking.invertYaw;
             face.InvertRoll = p.tracking.invertRoll;
+            face.SwapEyes = p.tracking.swapEyes;
             face.LookGain = p.tracking.lookGain;
             var c = p.calibration;
             face.Calibration = c.isCalibrated
@@ -70,6 +71,7 @@ namespace VRMCast.Core.Profiles
                 invertPitch = face.InvertPitch,
                 invertYaw = face.InvertYaw,
                 invertRoll = face.InvertRoll,
+                swapEyes = face.SwapEyes,
                 lookGain = face.LookGain,
             };
             var c = face.Calibration ?? CalibrationData.Identity;

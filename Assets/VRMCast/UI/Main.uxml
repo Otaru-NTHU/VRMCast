@@ -67,6 +67,7 @@
                             <ui:Toggle name="invert-pitch" label="" />
                             <ui:Toggle name="invert-yaw" label="" />
                             <ui:Toggle name="invert-roll" label="" />
+                            <ui:Toggle name="swap-eyes" label="" value="true" />
                         </ui:VisualElement>
                         <ui:Button name="clear-calibration" text="" />
                     </ui:Foldout>
