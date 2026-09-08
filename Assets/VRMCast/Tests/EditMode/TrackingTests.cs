@@ -80,10 +80,8 @@ namespace VRMCast.Core.Tests
                 (MediaPipeBlendshapes.JawOpen, 0.6f), (MediaPipeBlendshapes.MouthSmileLeft, 0.2f), (MediaPipeBlendshapes.MouthSmileRight, 0.7f),
                 (MediaPipeBlendshapes.EyeLookOutRight, 0.8f), (MediaPipeBlendshapes.EyeLookInLeft, 0.8f),
                 (MediaPipeBlendshapes.EyeLookUpLeft, 0.5f), (MediaPipeBlendshapes.EyeLookUpRight, 0.5f));
-            FaceFrameBuilder.SwapLeftRight = false;   // raw MediaPipe names, no side correction
-            TrackingFrame frame;
-            try { frame = FaceFrameBuilder.Build(1.5, shapes, new[] { 0f, 0f, -1f }, new[] { 0f, 1f, 0f }, new[] { 0.1f, 0.2f, 0.6f }); }
-            finally { FaceFrameBuilder.SwapLeftRight = true; }
+            Assert.That(FaceFrameBuilder.SwapLeftRight, Is.False, "MediaPipe's face names are the user's own sides");
+            var frame = FaceFrameBuilder.Build(1.5, shapes, new[] { 0f, 0f, -1f }, new[] { 0f, 1f, 0f }, new[] { 0.1f, 0.2f, 0.6f });
 
             Assert.That(frame.Timestamp, Is.EqualTo(1.5));
             Assert.That(frame.FaceConfidence, Is.EqualTo(1f));
@@ -98,13 +96,14 @@ namespace VRMCast.Core.Tests
         }
 
         [Test]
-        public void FrameBuilderSwapsMediaPipeImageSidesByDefault()
+        public void FrameBuilderCanSwapSidesForMirroredCameras()
         {
-            // MediaPipe's "eyeBlinkLeft" is the eye on the image's left = the user's right eye on an unmirrored feed.
             var shapes = Shapes((MediaPipeBlendshapes.EyeBlinkLeft, 0.9f), (MediaPipeBlendshapes.EyeBlinkRight, 0.1f),
                 (MediaPipeBlendshapes.EyeLookOutRight, 0.8f), (MediaPipeBlendshapes.EyeLookInLeft, 0.8f), (MediaPipeBlendshapes.JawOpen, 0.3f));
-            Assert.That(FaceFrameBuilder.SwapLeftRight, Is.True, "default");
-            var frame = FaceFrameBuilder.Build(0, shapes, null, null, null);
+            FaceFrameBuilder.SwapLeftRight = true;
+            TrackingFrame frame;
+            try { frame = FaceFrameBuilder.Build(0, shapes, null, null, null); }
+            finally { FaceFrameBuilder.SwapLeftRight = false; }
             Assert.That(frame.Eyes.BlinkLeft, Is.EqualTo(0.1f));
             Assert.That(frame.Eyes.BlinkRight, Is.EqualTo(0.9f));
             Assert.That(frame.Eyes.LookX, Is.EqualTo(-0.8f).Within(1e-5f), "image-right gaze is the user's left");

@@ -11,10 +11,10 @@ namespace VRMCast.Core.Tracking
     public static class FaceFrameBuilder
     {
         /// <summary>
-        /// When true (default) MediaPipe's Left/Right blendshape names are treated as image sides and swapped into the
-        /// user's own sides. Mirrored camera feeds set it to false. Read on the inference thread; written by settings.
+        /// When true MediaPipe's Left/Right blendshape names are swapped. Validated on device: the Face Landmarker's
+        /// names are already the user's own sides, so this stays off; it exists for a camera that mirrors its picture.
         /// </summary>
-        public static volatile bool SwapLeftRight = true;
+        public static volatile bool SwapLeftRight = false;
 
         /// <summary>Builds a frame for a detected face.</summary>
         /// <param name="blendshapes">Coefficient by MediaPipe name; the dictionary is stored, not copied.</param>

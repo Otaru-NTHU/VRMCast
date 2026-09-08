@@ -176,14 +176,15 @@ namespace VRMCast.Core.Tests
         }
 
         [Test]
-        public void PoseBuilderSwapsImageSideLabelsByDefault()
+        public void PoseBuilderSwapsImageSideLabelsWhenAsked()
         {
-            PoseFrameBuilder.SwapLeftRight = true;
             var world = World(shoulderDy: 0.1f);   // raw label "left" shoulder lower
             var vis = new float[PoseFrameBuilder.LandmarkCount];
             for (var i = 0; i < vis.Length; i++) vis[i] = 1f;
             vis[PoseFrameBuilder.LeftWrist] = 0.2f;
-            var p = PoseFrameBuilder.Build(0, world, vis).Pose.Value;
+            var raw = PoseFrameBuilder.Build(0, world, vis, null, 1f, swapSides: false).Pose.Value;
+            Assert.That(raw.LeftShoulderY, Is.GreaterThan(raw.RightShoulderY), "no swap: labels pass through");
+            var p = PoseFrameBuilder.Build(0, world, vis, null, 1f, swapSides: true).Pose.Value;
             Assert.That(p.RightShoulderY, Is.GreaterThan(p.LeftShoulderY), "the raw 'left' shoulder became the real right");
             Assert.That(p.RightWristVisibility, Is.EqualTo(0.2f), "visibility follows the swap");
             PoseFrameBuilder.ComputeAngles(p, out var r, out _, out _);

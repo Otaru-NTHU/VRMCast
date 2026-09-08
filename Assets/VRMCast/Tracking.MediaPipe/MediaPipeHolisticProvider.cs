@@ -222,14 +222,11 @@ namespace VRMCast.Tracking.MediaPipe
                         if (l.visibility.HasValue) visibility[i] = Math.Max(visibility[i], l.visibility.Value);
                     }
                 }
-                frame = PoseFrameBuilder.Build(seconds, world, visibility, normalized, _aspect);
-
-                // The model's "left hand" hangs off the pose's "left" wrist, which shares the pose label convention.
-                var swap = PoseFrameBuilder.SwapLeftRight;
-                var modelLeft = BuildHand(result.leftHandWorldLandmarks, result.leftHandLandmarks, labelLeft: true);
-                var modelRight = BuildHand(result.rightHandWorldLandmarks, result.rightHandLandmarks, labelLeft: false);
-                frame.LeftHand = swap ? modelRight : modelLeft;
-                frame.RightHand = swap ? modelLeft : modelRight;
+                // Validated on device: the holistic model's pose and hand labels are already the user's real sides
+                // (unlike the stand-alone Pose Landmarker, whose labels are image sides).
+                frame = PoseFrameBuilder.Build(seconds, world, visibility, normalized, _aspect, swapSides: false);
+                frame.LeftHand = BuildHand(result.leftHandWorldLandmarks, result.leftHandLandmarks, labelLeft: true);
+                frame.RightHand = BuildHand(result.rightHandWorldLandmarks, result.rightHandLandmarks, labelLeft: false);
             }
 
             _latest.Publish(frame);

@@ -132,10 +132,11 @@ the torso, and orients each hand bone from the palm axes (fingers direction and 
 at 85°) when the hand landmarker saw the hand.
 
 **Which side is which.** Observed on the unmirrored macOS FaceTime feed and locked in as the convention: the
-pose model and the face blendshapes name sides as they appear in a selfie mirror (their "left" is the user's
-real right), while the hand landmarker names the real hands. `PoseFrameBuilder` and `FaceFrameBuilder` swap
-those labels while building the frame, so every solver works with the user's real sides, and the body roll/yaw
-signs in `BodyPoseSolver` were fixed against the same on-device validation. The only user-facing switch is
+stand-alone Pose Landmarker names sides as they appear in a selfie mirror (its "left" is the user's real
+right), while the Holistic Landmarker (pose and hands), the Hand Landmarker and the Face Landmarker's
+blendshapes name the user's real sides. `PoseFrameBuilder` swaps the labels only for the stand-alone pose
+model, so every solver works with the user's real sides, and the body roll/yaw signs in `BodyPoseSolver` were
+fixed against the same on-device validation. The only user-facing switch is
 "Mirror (like a mirror)": on, the avatar is the reflection (user's right hand → avatar's left arm, on the same
 side of the screen); off, the avatar copies. Profiles from before this fix that reached a correct mirror by
 turning mirroring off and inverting yaw and roll are migrated to mirror mode on load. The invert switches

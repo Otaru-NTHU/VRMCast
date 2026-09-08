@@ -78,9 +78,9 @@ namespace VRMCast.Core.Tracking
     public static class PoseFrameBuilder
     {
         /// <summary>
-        /// The pose model's Left/Right labels are image sides (it names them as in a selfie mirror, like the face
-        /// blendshapes): on the unmirrored camera feed they are swapped into the user's real sides while building the
-        /// frame. Tests that feed raw landmarks turn this off.
+        /// Default for <see cref="Build"/>'s swap flag. The stand-alone Pose Landmarker labels image sides on the
+        /// unmirrored feed (validated: its "left" is the user's real right), so they are swapped into real sides;
+        /// the Holistic Landmarker's labels are already real sides and its provider passes false explicitly.
         /// </summary>
         public static volatile bool SwapLeftRight = true;
 
@@ -100,6 +100,10 @@ namespace VRMCast.Core.Tracking
         /// <param name="normalized">33 × (u, v, z) image-normalized landmarks or null.</param>
         /// <param name="imageAspect">Image width / height (used with <paramref name="normalized"/>).</param>
         public static TrackingFrame Build(double timestamp, float[] world, float[] visibility, float[] normalized = null, float imageAspect = 1f)
+            => Build(timestamp, world, visibility, normalized, imageAspect, SwapLeftRight);
+
+        /// <param name="swapSides">True when the model's Left/Right labels are image sides and must become the user's real sides.</param>
+        public static TrackingFrame Build(double timestamp, float[] world, float[] visibility, float[] normalized, float imageAspect, bool swapSides)
         {
             var frame = TrackingFrame.Empty(timestamp);
             if (world == null || world.Length < LandmarkCount * 3)
@@ -109,7 +113,7 @@ namespace VRMCast.Core.Tracking
             }
 
             // Landmark indices for the user's REAL left and right: swapped when the model labels image sides.
-            var swap = SwapLeftRight;
+            var swap = swapSides;
             int lSh = swap ? RightShoulder : LeftShoulder, rSh = swap ? LeftShoulder : RightShoulder;
             int lHip = swap ? RightHip : LeftHip, rHip = swap ? LeftHip : RightHip;
             int lEl = swap ? RightElbow : LeftElbow, rEl = swap ? LeftElbow : RightElbow;
