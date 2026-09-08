@@ -428,8 +428,27 @@ Toggle > Label {
 }
 
 Toggle .unity-toggle__checkmark {
+    width: 16px;
+    height: 16px;
     background-color: var(--bg-field);
     border-color: var(--border);
+    border-width: 1px;
+    border-radius: 3px;
+    -unity-background-image-tint-color: white;
+}
+
+/* Checked: accent fill so the state is unmistakable even where the theme's checkmark image is faint. */
+Toggle:checked .unity-toggle__checkmark {
+    background-color: var(--accent);
+    border-color: var(--accent-hover);
+}
+
+Toggle:checked > Label {
+    color: var(--text);
+}
+
+Toggle:hover .unity-toggle__checkmark {
+    border-color: var(--accent-hover);
 }
 
 /* Slim scrollbar for the sidebar */

@@ -118,6 +118,9 @@ directions in avatar space, smoothed, and returns an arm to the 70° rest pose w
   from the user's reach (learned from the pose, default 0.55 m) to the avatar's (bone lengths measured at load)
   and a two-bone IK places the elbow, using the pose elbow as the bend hint when it is visible and "down, slightly
   outward and back" otherwise. This is what keeps the arm natural when only the hand is clearly seen.
+- *Switches.* "Solve arms from the palm position (IK)" (default on) turns the hand-anchored path off so the pose
+  landmarks alone drive the arms; "Wrists follow the palm orientation" (default off until validated on more
+  models) enables the hand-bone rotation from the palm axes.
 - *Pose landmarks (fallback).* Without a hand, the shoulder → elbow and elbow → wrist world vectors are used
   directly, as before; an elbow visibility below 0.55 rests the arm and a hidden wrist keeps it straight.
 

@@ -73,6 +73,8 @@ namespace VRMCast.Core.Profiles
         public float smoothing = 0.6f;
         public float gain = 1f;
         public bool invertRoll, invertYaw, invertPitch;
+        public bool armsFromHands = true;
+        public bool wristFromPalm;
     }
 
     [Serializable]

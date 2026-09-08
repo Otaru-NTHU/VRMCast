@@ -27,6 +27,11 @@ namespace VRMCast.Core.Tracking
         public float ArmRestAngleDeg { get; set; } = 70f;
 
         public bool ArmsEnabled => Mode == BodyTrackingMode.UpperBodyArms || Mode == BodyTrackingMode.UpperBodyArmsFingers;
+
+        /// <summary>Use the hand landmarker's wrist as the arm target (two-bone IK) when a hand is seen; off = pose landmarks only.</summary>
+        public bool ArmsFromHands { get; set; } = true;
+        /// <summary>Rotate the hand bones from the palm orientation. Off keeps the wrists at rest.</summary>
+        public bool WristFromPalm { get; set; }
         public bool HandsEnabled => Mode == BodyTrackingMode.UpperBodyArmsFingers;
         public float Gain { get; set; } = 1f;
         public float DeadZoneDeg { get; set; } = 1f;

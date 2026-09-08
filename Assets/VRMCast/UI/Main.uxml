@@ -105,6 +105,8 @@
                     <ui:DropdownField name="body-mode" label="" />
                     <ui:Label name="hands-state" text="" class="hint" />
                     <ui:Toggle name="hands-swap" label="" value="false" />
+                    <ui:Toggle name="arms-from-hands" label="" value="true" />
+                    <ui:Toggle name="wrist-from-palm" label="" value="false" />
                     <ui:Toggle name="body-invert-roll" label="" value="false" />
                     <ui:Toggle name="body-invert-yaw" label="" value="false" />
                     <ui:Toggle name="body-invert-pitch" label="" value="false" />

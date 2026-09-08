@@ -220,7 +220,7 @@ namespace VRMCast.Core.Tracking
             var handFresh = hand.HasValue && now - handAt <= HandHoldSeconds && hand.Value.Confidence >= HandMinConfidence
                             && hand.Value.LandmarksXyz != null;
 
-            if (handFresh && TryHandTarget(p, labelLeft, hand.Value, out var deltaCamera))
+            if (handFresh && _settings.ArmsFromHands && TryHandTarget(p, labelLeft, hand.Value, out var deltaCamera))
             {
                 var scale = (UpperArmLength + ForearmLength) / Math.Max(0.3f, _userReach);
                 var target = MapAxes(deltaCamera, mirror) * scale;
@@ -255,7 +255,7 @@ namespace VRMCast.Core.Tracking
                 return result;
             }
 
-            if (handFresh && TryHandOrientation(hand.Value, realLeft, mirror, out var f, out var n))
+            if (handFresh && _settings.WristFromPalm && TryHandOrientation(hand.Value, realLeft, mirror, out var f, out var n))
             {
                 result.HasHandOrientation = true;
                 result.HandForward = f;

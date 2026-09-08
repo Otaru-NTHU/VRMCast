@@ -151,6 +151,25 @@ namespace VRMCast.Core.Tests
         }
 
         [Test]
+        public void ArmsFromHandsOffUsesPoseLandmarksOnly()
+        {
+            var pose = PoseFrame();
+            var hands = HandFrameBuilder.Build(0, Hand(0.66f, 0.05f, realLeft: true), null);
+            HandFrameBuilder.ResolveSides(ref hands, pose.Pose, false, false);
+            var solver = new ArmPoseSolver(new BodyTrackingSettings { ArmSmoothing = 0f, ArmsFromHands = false, WristFromPalm = true });
+            var arms = Run(solver, pose, hands, mirror: true);
+            Assert.That(arms.Right.FromHand, Is.False);
+            Assert.That(arms.Right.Tracked, Is.True, "pose elbow drives the arm");
+            Assert.That(arms.Right.UpperArm.Y, Is.LessThan(-0.5f), "the pose says the arm hangs");
+            Assert.That(arms.Right.HasHandOrientation, Is.True, "palm orientation is independent of the IK switch");
+
+            solver = new ArmPoseSolver(new BodyTrackingSettings { ArmSmoothing = 0f, WristFromPalm = false });
+            arms = Run(solver, pose, hands, mirror: true);
+            Assert.That(arms.Right.FromHand, Is.True);
+            Assert.That(arms.Right.HasHandOrientation, Is.False);
+        }
+
+        [Test]
         public void ResolverKeepsSideWhileHandMovesAwayFromPoseWrist()
         {
             var pose = PoseFrame();
@@ -236,7 +255,7 @@ namespace VRMCast.Core.Tests
             var pose = PoseFrame();
             var hands = HandFrameBuilder.Build(0, Hand(0.66f, 0.2f, realLeft: true), null);
             HandFrameBuilder.ResolveSides(ref hands, pose.Pose, false, false);
-            var arms = Run(NewSolver(), pose, hands, mirror: true);
+            var arms = Run(new ArmPoseSolver(new BodyTrackingSettings { ArmSmoothing = 0f, WristFromPalm = true }), pose, hands, mirror: true);
             Assert.That(arms.Right.HasHandOrientation, Is.True);
             Assert.That(arms.Right.HandForward.Y, Is.GreaterThan(0.9f), "fingers point up");
             Assert.That(arms.Right.HandNormal.Z, Is.GreaterThan(0.9f), "palm faces the viewer");
