@@ -181,7 +181,7 @@ namespace VRMCast.Tracking.MediaPipe
             return hand;
         }
 
-        private void OnResult(HolisticLandmarkerResult result, Image image, long timestampMs)
+        private void OnResult(in HolisticLandmarkerResult result, Image image, long timestampMs)
         {
             var now = _clock.Elapsed.TotalSeconds;
             double submitted;
