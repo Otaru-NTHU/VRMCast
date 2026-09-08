@@ -8,6 +8,12 @@ namespace VRMCast.Core.Tests
     /// <summary>Hand-anchored arm IK, self-calibrating sides and hand side resolution.</summary>
     public class ArmIkTests
     {
+        [SetUp]
+        public void RawLabels() => PoseFrameBuilder.SwapLeftRight = false;
+
+        [TearDown]
+        public void RestoreLabels() => PoseFrameBuilder.SwapLeftRight = true;
+
         private const float Aspect = 16f / 9f;
 
         /// <summary>Front-facing user, unmirrored picture: the left shoulder is on the image's right (label left, u > 0.5).</summary>
@@ -205,6 +211,16 @@ namespace VRMCast.Core.Tests
             f = HandFrameBuilder.Build(1, far, near);
             resolver.Resolve(ref f, pose.Pose, false);
             Assert.That(f.LeftHand.Value.WristU, Is.EqualTo(near.WristU).Within(1e-5f));
+        }
+
+        [Test]
+        public void ResolverDropsStrayDetectionFarFromEveryWrist()
+        {
+            var pose = PoseFrame();
+            var resolver = new HandSideResolver();
+            var f = HandFrameBuilder.Build(0, Hand(0.5f, 0.05f, realLeft: true), null);   // near the head, both wrists hang low
+            resolver.Resolve(ref f, pose.Pose, false);
+            Assert.That(f.LeftHand.HasValue || f.RightHand.HasValue, Is.False);
         }
 
         [Test]

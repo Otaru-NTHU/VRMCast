@@ -40,6 +40,7 @@ namespace VRMCast.Core.Profiles
             body.InvertYaw = p.body.invertYaw;
             body.InvertPitch = p.body.invertPitch;
             body.ArmsFromHands = p.body.armsFromHands;
+            body.SwapSides = p.body.swapSides;
             body.WristFromPalm = p.body.wristFromPalm;
             body.NeutralRollRad = c.bodyRollRad;
             body.NeutralYawRad = c.bodyYawRad;
@@ -84,7 +85,7 @@ namespace VRMCast.Core.Profiles
                 lookX = c.LookX, lookY = c.LookY, mouthOpen = c.MouthOpen, smile = c.Smile,
                 bodyRollRad = body.NeutralRollRad, bodyYawRad = body.NeutralYawRad, bodyPitchRad = body.NeutralPitchRad,
             };
-            p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain, invertRoll = body.InvertRoll, invertYaw = body.InvertYaw, invertPitch = body.InvertPitch, armsFromHands = body.ArmsFromHands, wristFromPalm = body.WristFromPalm };
+            p.body = new BodyTuningData { smoothing = body.Smoothing, gain = body.Gain, invertRoll = body.InvertRoll, invertYaw = body.InvertYaw, invertPitch = body.InvertPitch, armsFromHands = body.ArmsFromHands, wristFromPalm = body.WristFromPalm, swapSides = body.SwapSides };
             if (hands != null) p.hands = new HandTuningData { smoothing = hands.Smoothing, curlGain = hands.CurlGain, swapHands = hands.SwapHands };
         }
 

@@ -75,6 +75,7 @@ namespace VRMCast.Core.Profiles
         public bool invertRoll, invertYaw, invertPitch;
         public bool armsFromHands = true;
         public bool wristFromPalm;
+        public bool swapSides = true;
     }
 
     [Serializable]

@@ -104,6 +104,7 @@
                     <ui:Label name="section-body" text="" class="section-title" />
                     <ui:DropdownField name="body-mode" label="" />
                     <ui:Label name="hands-state" text="" class="hint" />
+                    <ui:Toggle name="body-swap-sides" label="" value="true" />
                     <ui:Toggle name="hands-swap" label="" value="false" />
                     <ui:Toggle name="arms-from-hands" label="" value="true" />
                     <ui:Toggle name="wrist-from-palm" label="" value="false" />

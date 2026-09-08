@@ -41,6 +41,12 @@ namespace VRMCast.Core.Tracking
         public float LostTimeoutSeconds { get; set; } = 0.5f;
         public float ReturnToNeutralSeconds { get; set; } = 1.0f;
 
+        /// <summary>
+        /// The pose model labels image sides (selfie convention) on an unmirrored feed; swapping them (default) gives
+        /// the user's real sides for the torso and the arms. Off for a camera that delivers a mirrored picture.
+        /// </summary>
+        public bool SwapSides { get; set; } = true;
+
         /// <summary>Per-axis sign switches for cameras or models whose torso conventions disagree with the defaults.</summary>
         public bool InvertRoll { get; set; }
         public bool InvertYaw { get; set; }
@@ -77,6 +83,13 @@ namespace VRMCast.Core.Tracking
     /// </summary>
     public static class PoseFrameBuilder
     {
+        /// <summary>
+        /// When true (default) the pose model's Left/Right labels are treated as image sides (the model names them as
+        /// in a selfie mirror, like the face blendshapes) and swapped into the user's real sides while building the
+        /// frame. Mirrored camera feeds set it to false. Read on the inference thread; written by settings.
+        /// </summary>
+        public static volatile bool SwapLeftRight = true;
+
         public const int Nose = 0;
         public const int LeftShoulder = 11;
         public const int RightShoulder = 12;
@@ -101,39 +114,46 @@ namespace VRMCast.Core.Tracking
                 return frame;
             }
 
+            // Landmark indices for the user's REAL left and right: swapped when the model labels image sides.
+            var swap = SwapLeftRight;
+            int lSh = swap ? RightShoulder : LeftShoulder, rSh = swap ? LeftShoulder : RightShoulder;
+            int lHip = swap ? RightHip : LeftHip, rHip = swap ? LeftHip : RightHip;
+            int lEl = swap ? RightElbow : LeftElbow, rEl = swap ? LeftElbow : RightElbow;
+            int lWr = swap ? RightWrist : LeftWrist, rWr = swap ? LeftWrist : RightWrist;
+
             var pose = new PoseTracking
             {
-                LeftShoulderX = world[LeftShoulder * 3], LeftShoulderY = world[LeftShoulder * 3 + 1], LeftShoulderZ = world[LeftShoulder * 3 + 2],
-                RightShoulderX = world[RightShoulder * 3], RightShoulderY = world[RightShoulder * 3 + 1], RightShoulderZ = world[RightShoulder * 3 + 2],
-                LeftHipX = world[LeftHip * 3], LeftHipY = world[LeftHip * 3 + 1], LeftHipZ = world[LeftHip * 3 + 2],
-                RightHipX = world[RightHip * 3], RightHipY = world[RightHip * 3 + 1], RightHipZ = world[RightHip * 3 + 2],
+                LeftShoulderX = world[lSh * 3], LeftShoulderY = world[lSh * 3 + 1], LeftShoulderZ = world[lSh * 3 + 2],
+                RightShoulderX = world[rSh * 3], RightShoulderY = world[rSh * 3 + 1], RightShoulderZ = world[rSh * 3 + 2],
+                LeftHipX = world[lHip * 3], LeftHipY = world[lHip * 3 + 1], LeftHipZ = world[lHip * 3 + 2],
+                RightHipX = world[rHip * 3], RightHipY = world[rHip * 3 + 1], RightHipZ = world[rHip * 3 + 2],
                 NoseX = world[Nose * 3], NoseY = world[Nose * 3 + 1], NoseZ = world[Nose * 3 + 2],
-                LeftElbowX = world[LeftElbow * 3], LeftElbowY = world[LeftElbow * 3 + 1], LeftElbowZ = world[LeftElbow * 3 + 2],
-                RightElbowX = world[RightElbow * 3], RightElbowY = world[RightElbow * 3 + 1], RightElbowZ = world[RightElbow * 3 + 2],
-                LeftWristX = world[LeftWrist * 3], LeftWristY = world[LeftWrist * 3 + 1], LeftWristZ = world[LeftWrist * 3 + 2],
-                RightWristX = world[RightWrist * 3], RightWristY = world[RightWrist * 3 + 1], RightWristZ = world[RightWrist * 3 + 2],
+                LeftElbowX = world[lEl * 3], LeftElbowY = world[lEl * 3 + 1], LeftElbowZ = world[lEl * 3 + 2],
+                RightElbowX = world[rEl * 3], RightElbowY = world[rEl * 3 + 1], RightElbowZ = world[rEl * 3 + 2],
+                LeftWristX = world[lWr * 3], LeftWristY = world[lWr * 3 + 1], LeftWristZ = world[lWr * 3 + 2],
+                RightWristX = world[rWr * 3], RightWristY = world[rWr * 3 + 1], RightWristZ = world[rWr * 3 + 2],
                 LeftElbowVisibility = 1f, RightElbowVisibility = 1f, LeftWristVisibility = 1f, RightWristVisibility = 1f,
             };
             var confidence = 1f;
             if (visibility != null && visibility.Length >= LandmarkCount)
             {
                 confidence = Math.Min(visibility[LeftShoulder], visibility[RightShoulder]);
-                pose.LeftElbowVisibility = visibility[LeftElbow];
-                pose.RightElbowVisibility = visibility[RightElbow];
-                pose.LeftWristVisibility = visibility[LeftWrist];
-                pose.RightWristVisibility = visibility[RightWrist];
+                pose.LeftElbowVisibility = visibility[lEl];
+                pose.RightElbowVisibility = visibility[rEl];
+                pose.LeftWristVisibility = visibility[lWr];
+                pose.RightWristVisibility = visibility[rWr];
             }
             pose.Confidence = confidence;
             if (normalized != null && normalized.Length >= LandmarkCount * 3)
             {
                 pose.HasImageCoords = true;
                 pose.ImageAspect = imageAspect > 0f ? imageAspect : 1f;
-                pose.LeftShoulderU = normalized[LeftShoulder * 3]; pose.LeftShoulderV = normalized[LeftShoulder * 3 + 1];
-                pose.RightShoulderU = normalized[RightShoulder * 3]; pose.RightShoulderV = normalized[RightShoulder * 3 + 1];
-                pose.LeftElbowU = normalized[LeftElbow * 3]; pose.LeftElbowV = normalized[LeftElbow * 3 + 1];
-                pose.RightElbowU = normalized[RightElbow * 3]; pose.RightElbowV = normalized[RightElbow * 3 + 1];
-                pose.LeftWristU = normalized[LeftWrist * 3]; pose.LeftWristV = normalized[LeftWrist * 3 + 1];
-                pose.RightWristU = normalized[RightWrist * 3]; pose.RightWristV = normalized[RightWrist * 3 + 1];
+                pose.LeftShoulderU = normalized[lSh * 3]; pose.LeftShoulderV = normalized[lSh * 3 + 1];
+                pose.RightShoulderU = normalized[rSh * 3]; pose.RightShoulderV = normalized[rSh * 3 + 1];
+                pose.LeftElbowU = normalized[lEl * 3]; pose.LeftElbowV = normalized[lEl * 3 + 1];
+                pose.RightElbowU = normalized[rEl * 3]; pose.RightElbowV = normalized[rEl * 3 + 1];
+                pose.LeftWristU = normalized[lWr * 3]; pose.LeftWristV = normalized[lWr * 3 + 1];
+                pose.RightWristU = normalized[rWr * 3]; pose.RightWristV = normalized[rWr * 3 + 1];
             }
             frame.Pose = pose;
             frame.PoseConfidence = confidence;

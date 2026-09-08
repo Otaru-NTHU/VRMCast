@@ -115,6 +115,7 @@ namespace VRMCast.UI
         private readonly Label _handsState;
         private readonly Toggle _bodyInvertRoll, _bodyInvertYaw, _bodyInvertPitch;
         private readonly Toggle _armsFromHands, _wristFromPalm;
+        private readonly Toggle _bodySwapSides;
         private readonly Label _diagPose;
         private readonly Label _statusAudio;
         private static readonly LipSyncMode[] LipSyncOrder = { LipSyncMode.Camera, LipSyncMode.Microphone, LipSyncMode.Hybrid };
@@ -230,6 +231,7 @@ namespace VRMCast.UI
             _bodyInvertYaw = Q<Toggle>("body-invert-yaw");
             _bodyInvertPitch = Q<Toggle>("body-invert-pitch");
             _armsFromHands = Q<Toggle>("arms-from-hands");
+            _bodySwapSides = Q<Toggle>("body-swap-sides");
             _wristFromPalm = Q<Toggle>("wrist-from-palm");
             _diagPose = Q<Label>("diag-pose");
             _statusAudio = Q<Label>("status-audio");
@@ -508,6 +510,7 @@ namespace VRMCast.UI
             _bodyInvertYaw.label = _loc["body.invertYaw"];
             _bodyInvertPitch.label = _loc["body.invertPitch"];
             _armsFromHands.label = _loc["body.armsFromHands"];
+            _bodySwapSides.label = _loc["body.swapSides"];
             _wristFromPalm.label = _loc["body.wristFromPalm"];
 
             Q<Label>("section-framing").text = _loc["section.framing"];
@@ -737,6 +740,7 @@ namespace VRMCast.UI
             _bodyInvertYaw.RegisterValueChangedCallback(evt => { tracking.Body.InvertYaw = evt.newValue; tracking.NotifySettingsChanged(); });
             _bodyInvertPitch.RegisterValueChangedCallback(evt => { tracking.Body.InvertPitch = evt.newValue; tracking.NotifySettingsChanged(); });
             _armsFromHands.RegisterValueChangedCallback(evt => { tracking.Body.ArmsFromHands = evt.newValue; tracking.NotifySettingsChanged(); });
+            _bodySwapSides.RegisterValueChangedCallback(evt => { tracking.Body.SwapSides = evt.newValue; tracking.NotifySettingsChanged(); });
             _wristFromPalm.RegisterValueChangedCallback(evt => { tracking.Body.WristFromPalm = evt.newValue; tracking.NotifySettingsChanged(); });
             _trackSmoothing.RegisterValueChangedCallback(evt =>
             {
@@ -924,6 +928,7 @@ namespace VRMCast.UI
             _bodyInvertYaw.SetValueWithoutNotify(tracking.Body.InvertYaw);
             _bodyInvertPitch.SetValueWithoutNotify(tracking.Body.InvertPitch);
             _armsFromHands.SetValueWithoutNotify(tracking.Body.ArmsFromHands);
+            _bodySwapSides.SetValueWithoutNotify(tracking.Body.SwapSides);
             _wristFromPalm.SetValueWithoutNotify(tracking.Body.WristFromPalm);
             var handsOn = tracking.Body.HandsEnabled && tracking.HandEngineAvailable;
             _armsFromHands.style.display = handsOn ? DisplayStyle.Flex : DisplayStyle.None;
@@ -932,6 +937,7 @@ namespace VRMCast.UI
             _bodyInvertRoll.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
             _bodyInvertYaw.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
             _bodyInvertPitch.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
+            _bodySwapSides.style.display = bodyOn ? DisplayStyle.Flex : DisplayStyle.None;
             RefreshHandsState();
         }
 

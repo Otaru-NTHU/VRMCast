@@ -8,6 +8,12 @@ namespace VRMCast.Core.Tests
 {
     public class LipSyncAndBodyTests
     {
+        [SetUp]
+        public void RawLabels() => PoseFrameBuilder.SwapLeftRight = false;
+
+        [TearDown]
+        public void RestoreLabels() => PoseFrameBuilder.SwapLeftRight = true;
+
         private static float[] Sine(float amplitude, int count = 320)
         {
             var s = new float[count];
@@ -167,6 +173,21 @@ namespace VRMCast.Core.Tests
             vis[PoseFrameBuilder.RightShoulder] = 0.2f;
             Assert.That(PoseFrameBuilder.Build(0, World(), vis).PoseConfidence, Is.EqualTo(0.2f).Within(1e-6f));
             Assert.That(PoseFrameBuilder.NoBody(1).PoseConfidence, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void PoseBuilderSwapsImageSideLabelsByDefault()
+        {
+            PoseFrameBuilder.SwapLeftRight = true;
+            var world = World(shoulderDy: 0.1f);   // raw label "left" shoulder lower
+            var vis = new float[PoseFrameBuilder.LandmarkCount];
+            for (var i = 0; i < vis.Length; i++) vis[i] = 1f;
+            vis[PoseFrameBuilder.LeftWrist] = 0.2f;
+            var p = PoseFrameBuilder.Build(0, world, vis).Pose.Value;
+            Assert.That(p.RightShoulderY, Is.GreaterThan(p.LeftShoulderY), "the raw 'left' shoulder became the real right");
+            Assert.That(p.RightWristVisibility, Is.EqualTo(0.2f), "visibility follows the swap");
+            PoseFrameBuilder.ComputeAngles(p, out var r, out _, out _);
+            Assert.That(r, Is.LessThan(0f), "real right shoulder lower = lean to the right = negative roll");
         }
 
         [Test]

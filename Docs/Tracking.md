@@ -131,13 +131,18 @@ the directions into local bone rotations with `FromToRotation` under the spine/c
 the torso, and orients each hand bone from the palm axes (fingers direction and palm normal, wrist bend capped
 at 85°) when the hand landmarker saw the hand.
 
-**Which hand is which.** The pose labels the user's left and right for an unmirrored camera picture, and the
-solver trusts those labels. `HandSideResolver` assigns each hand detection in three steps: continuity with the
+**Which side is which.** Observed on the unmirrored macOS FaceTime feed: the pose model and the face
+blendshapes name sides as they appear in a selfie mirror (its "left" is the user's real right), while the hand
+landmarker names the real hands. `PoseFrameBuilder` therefore swaps the pose labels by default
+(`BodyTrackingSettings.SwapSides`, "Swap body and arm sides" in the BODY section, default on) exactly like
+`FaceFrameBuilder` does for the blendshapes, so every solver downstream works with the user's real sides and the
+invert switches are no longer needed for a normal camera. `HandSideResolver` assigns each hand detection in three steps: continuity with the
 hand tracked in the previous frame (nearest wrist within 0.18 image widths, so a hand keeps its side while it
 moves and the detector may reorder its output), then the pose wrists (a wrist within 0.12 that is clearly nearer
-than the other overrides), then MediaPipe's handedness label for a brand-new hand far from any wrist (the label
-assumes a mirrored selfie image, so "Left" means the real right hand on an unmirrored feed). Two detections
-never share a side. A camera that delivers a mirrored picture flips every label the same way and nothing in the
+than the other overrides), then MediaPipe's handedness label for a brand-new hand that no wrist claims (observed anatomical on this feed;
+`HandSideResolver.LabelsAnatomical`). A brand-new detection farther than 0.35 image widths from every visible
+pose wrist is a stray and is dropped, and two detections within 0.05 of each other are the same hand reported
+twice, so a single raised hand can no longer drive both arms. Two detections never share a side. A camera that delivers a mirrored picture flips every label the same way and nothing in the
 geometry can tell: the BODY section's "Swap left and right (arms and fingers)" toggle undoes that for both.
 
 **Eyes and mouth sides.** MediaPipe's blendshape names ("eyeBlinkLeft", "mouthSmileLeft", "eyeLookOutLeft" …)

@@ -7,6 +7,12 @@ namespace VRMCast.Core.Tests
 {
     public class ArmPoseTests
     {
+        [SetUp]
+        public void RawLabels() => PoseFrameBuilder.SwapLeftRight = false;
+
+        [TearDown]
+        public void RestoreLabels() => PoseFrameBuilder.SwapLeftRight = true;
+
         private static float[] World(Action<Action<int, float, float, float>> setup)
         {
             var w = new float[PoseFrameBuilder.LandmarkCount * 3];

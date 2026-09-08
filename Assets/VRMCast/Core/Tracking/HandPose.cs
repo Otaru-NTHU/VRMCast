@@ -413,8 +413,15 @@ namespace VRMCast.Core.Tracking
         public float PoseAmbiguityRatio { get; set; } = 1.5f;
         public float MinWristVisibility { get; set; } = 0.3f;
 
-        /// <summary>How MediaPipe's handedness label maps when nothing else helps; see <see cref="HandFrameBuilder.IsUserLeft"/>.</summary>
-        public bool ImageMirrored { get; set; }
+        /// <summary>
+        /// Whether the hand landmarker's "Left"/"Right" already name the user's real hands (observed on the unmirrored
+        /// macOS feed) or image sides. Only matters for a brand-new hand far from every pose wrist.
+        /// </summary>
+        public bool LabelsAnatomical { get; set; } = true;
+        /// <summary>With visible pose wrists, a detection farther than this from both is a stray and is dropped.</summary>
+        public float RejectDistance { get; set; } = 0.35f;
+        /// <summary>Two detections closer than this are the same hand reported twice; the less confident one is dropped.</summary>
+        public float DuplicateDistance { get; set; } = 0.05f;
 
         private struct Tracked
         {
@@ -442,6 +449,12 @@ namespace VRMCast.Core.Tracking
             var havePose = pose.HasValue && pose.Value.HasImageCoords;
             var p = pose ?? default;
             var aspect = havePose && p.ImageAspect > 0f ? p.ImageAspect : 1f;
+
+            // The same hand reported twice: keep the more confident detection.
+            if (a.HasValue && b.HasValue && Dist(a.Value.WristU, a.Value.WristV, b.Value.WristU, b.Value.WristV, aspect) < DuplicateDistance)
+            {
+                if (a.Value.Confidence >= b.Value.Confidence) b = null; else a = null;
+            }
 
             var sideA = Decide(a, havePose, p, aspect, out var scoreA);
             var sideB = Decide(b, havePose, p, aspect, out var scoreB);
@@ -499,6 +512,9 @@ namespace VRMCast.Core.Tracking
                 var dr = p.RightWristVisibility >= MinWristVisibility ? Dist(h.WristU, h.WristV, p.RightWristU, p.RightWristV, aspect) : float.MaxValue;
                 var near = Math.Min(dl, dr);
                 var far = Math.Max(dl, dr);
+                // A brand-new detection nowhere near a visible wrist is a stray (a face, a shirt fold): ignore it.
+                // A hand already being tracked may drift far from the pose wrist, which lags or loses it.
+                if (!tracked.HasValue && near != float.MaxValue && near > RejectDistance) return null;
                 if (near <= PoseMatchDistance)
                 {
                     var unambiguous = far == float.MaxValue || far >= near * PoseAmbiguityRatio;
@@ -518,7 +534,7 @@ namespace VRMCast.Core.Tracking
 
             // 3. Label.
             score = 0.5f * h.Confidence;
-            return HandFrameBuilder.IsUserLeft(h.LabelLeft, ImageMirrored, false);
+            return HandFrameBuilder.IsUserLeft(h.LabelLeft, imageIsMirrored: LabelsAnatomical, swap: false);
         }
 
         private static float Dist(float u0, float v0, float u1, float v1, float aspect)

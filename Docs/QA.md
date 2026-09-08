@@ -117,8 +117,9 @@ and one VRM 1.0 model, the built-in camera, and a standalone build.
     A screenshot of this preview is what to send when sides look wrong.
 6e. **Eyes.** Wink your left eye: the avatar winks the eye on the same side of the screen (its right). If the other
     eye winks, untick "Swap eye sides". Blink strength default is now 2.5; existing profiles keep their old value.
-6d. **Body switches.** Lean left: the avatar's torso top goes to screen-left (mirror). If not, "Invert body tilt"
-    fixes it and the setting survives a relaunch; same for turn and lean.
+6d. **Body switches.** With "Swap body and arm sides" on (default) and every invert switch off: lean left → the
+    avatar's torso top goes to screen-left (mirror); raise your right hand → P:R sits on it in the preview and the
+    avatar raises its screen-right arm. The invert switches remain for unusual cameras and survive a relaunch.
 7. **Persistence.** Lip mode, microphone, sensitivity, gate and body mode survive a relaunch.
 8. **Performance.** Diagnostics: body ≈ 20 fps, hands ≈ 15 fps, face still ≈ 30 fps, render stays at the target.
 

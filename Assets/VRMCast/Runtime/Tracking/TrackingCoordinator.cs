@@ -312,6 +312,7 @@ namespace VRMCast.Tracking
             }
 
             FaceFrameBuilder.SwapLeftRight = Settings.SwapEyes;
+            PoseFrameBuilder.SwapLeftRight = Body.SwapSides;
             _provider.Tick();
 
             if (_provider.TryGetLatest(out var frame) && frame.Timestamp > 0)
